@@ -96,16 +96,26 @@ async function initApp() {
     }
   });
   
-  // ログイン状態をチェック
-  const { data: { user }, error } = await supabaseClient.auth.getUser();
+  // ログイン状態をチェック（セッションとユーザー情報の両方を確認）
+  const { data: { session }, error: sessionError } = await supabaseClient.auth.getSession();
+  const { data: { user }, error: userError } = await supabaseClient.auth.getUser();
   
-  if (user) {
-    // ログイン済みの場合
-    userData.id = user.id;
+  console.log('Login status check:');
+  console.log('Session:', session);
+  console.log('User:', user);
+  console.log('Session error:', sessionError);
+  console.log('User error:', userError);
+  
+  if ((session && session.user) || user) {
+    // ログイン済みの場合（セッションまたはユーザー情報が存在）
+    const currentUser = session?.user || user;
+    userData.id = currentUser.id;
+    console.log('User is logged in, loading user data and showing app screen');
     await loadUserData();
     showAppScreen();
   } else {
     // 未ログインの場合
+    console.log('User is not logged in, showing login screen');
     showLoginScreen();
   }
   
