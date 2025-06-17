@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ペンペンと一緒に - ToDo &amp; 気分記録</title>
+  <link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@300;400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>ペンペンと一緒に</h1>
+    </header>
+    
+    <!-- ペンギン表示エリア -->
+    <div class="penguin-container">
+      <img id="penguinImage" class="penguin-image" src="images/55b5453a51a444569199c2ab5b5d4e4a.png" alt="ペンペン">
+      <div id="penguinSpeech" class="penguin-speech">
+        おはよう〜今日もいっしょにいこ〜
+      </div>
+    </div>
+    
+    <!-- 気分セレクター -->
+    <div class="mood-section">
+      <h2 class="mood-title">今日の気分は？</h2>
+      <div class="mood-selector">
+        <button class="mood-btn" data-mood="happy">
+          <span class="mood-emoji">😊</span>
+          <span class="mood-label">うれしい</span>
+        </button>
+        <button class="mood-btn" data-mood="normal">
+          <span class="mood-emoji">😌</span>
+          <span class="mood-label">ふつう</span>
+        </button>
+        <button class="mood-btn" data-mood="tired">
+          <span class="mood-emoji">😓</span>
+          <span class="mood-label">つかれた</span>
+        </button>
+        <button class="mood-btn" data-mood="sad">
+          <span class="mood-emoji">😢</span>
+          <span class="mood-label">かなしい</span>
+        </button>
+      </div>
+    </div>
+    
+    <!-- タスクリスト -->
+    <div class="todo-section">
+      <h2 class="todo-title">今日のタスク</h2>
+      <div id="todoList" class="todo-list">
+        <!-- JavaScriptでタスクが追加されます -->
+      </div>
+      <button id="addTodoBtn" class="todo-add-btn">＋ タスクを追加</button>
+    </div>
+    
+    <!-- コイン情報 -->
+    <div class="coin-section">
+      <div class="coin-info">
+        <span class="coin-icon">🪙</span>
+        <span id="coinAmount" class="coin-amount">0</span> コイン
+      </div>
+    </div>
+  </div>
+  
+  <!-- タスク追加モーダル -->
+  <div id="todoModal" class="modal">
+    <div class="modal-content">
+      <h3 class="modal-title">タスクを追加</h3>
+      <div class="modal-form">
+        <input type="text" id="todoInput" class="modal-input" placeholder="タスク名を入力" required>
+      </div>
+      <div class="modal-buttons">
+        <button id="cancelTodoBtn" class="modal-btn cancel">キャンセル</button>
+        <button id="saveTodoBtn" class="modal-btn save">保存する</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/app.js"></script>
+</body>
+</html>

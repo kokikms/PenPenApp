@@ -1,0 +1,351 @@
+/* ペンペンアプリのスタイル */
+:root {
+  --primary-color: #6aa4d9;
+  --secondary-color: #f0a778;
+  --bg-color: #fff7e6;
+  --text-color: #5a4a3f;
+  --light-gray: #e0e0e0;
+  --success-color: #7bd47e;
+  --warning-color: #ff9a9a;
+  --box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+  --card-bg: #ffffff;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: 'M PLUS Rounded 1c', sans-serif;
+}
+
+body {
+  background-color: var(--bg-color);
+  color: var(--text-color);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.container {
+  max-width: 600px;
+  margin: 0 auto;
+  padding: 1rem;
+  flex: 1;
+}
+
+header {
+  text-align: center;
+  padding: 1rem 0;
+}
+
+h1 {
+  color: var(--text-color);
+  font-size: 1.5rem;
+  margin-bottom: 0.5rem;
+}
+
+/* ペンギン表示エリア */
+.penguin-container {
+  position: relative;
+  width: 100%;
+  padding: 1.5rem;
+  margin: 1rem 0;
+  background-color: var(--card-bg);
+  border-radius: 20px;
+  overflow: hidden;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  box-shadow: var(--box-shadow);
+}
+
+.penguin-image {
+  width: 120px;
+  height: 120px;
+  object-fit: contain;
+  margin-bottom: 1rem;
+}
+
+.penguin-speech {
+  background-color: var(--card-bg);
+  border-radius: 15px;
+  padding: 1rem 1.5rem;
+  width: 90%;
+  position: relative;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+  border: 1px solid #f0f0f0;
+  font-size: 1rem;
+  color: var(--text-color);
+}
+
+/* 気分セレクター */
+.mood-section {
+  margin: 1.5rem 0;
+}
+
+.mood-title {
+  font-size: 1.2rem;
+  margin-bottom: 1rem;
+  color: var(--text-color);
+}
+
+.mood-selector {
+  display: flex;
+  justify-content: space-between;
+  background-color: var(--card-bg);
+  border-radius: 20px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+  box-shadow: var(--box-shadow);
+}
+
+.mood-btn {
+  background: none;
+  border: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  cursor: pointer;
+  padding: 0.5rem;
+  border-radius: 10px;
+  transition: background-color 0.3s;
+}
+
+.mood-btn:hover, .mood-btn.selected {
+  background-color: rgba(106, 164, 217, 0.1);
+}
+
+.mood-emoji {
+  font-size: 2rem;
+  margin-bottom: 0.3rem;
+}
+
+.mood-label {
+  font-size: 0.8rem;
+  color: var(--text-color);
+}
+
+/* タスクリスト */
+.todo-section {
+  margin: 1.5rem 0;
+}
+
+.todo-title {
+  font-size: 1.2rem;
+  margin-bottom: 1rem;
+  color: var(--text-color);
+}
+
+.todo-list {
+  background-color: var(--card-bg);
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: var(--box-shadow);
+}
+
+.todo-item {
+  display: flex;
+  align-items: center;
+  padding: 1rem;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.todo-item:last-child {
+  border-bottom: none;
+}
+
+.todo-check {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 24px;
+  height: 24px;
+  border: 2px solid var(--primary-color);
+  border-radius: 5px;
+  margin-right: 1rem;
+  position: relative;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.todo-check:checked {
+  background-color: var(--primary-color);
+}
+
+.todo-check:checked::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 12px;
+  height: 12px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='white'%3E%3Cpath d='M9 16.2L4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4L9 16.2z'/%3E%3C/svg%3E");
+  background-size: contain;
+  background-repeat: no-repeat;
+}
+
+.todo-text {
+  flex: 1;
+  font-size: 1rem;
+  color: var(--text-color);
+}
+
+.todo-item.completed .todo-text {
+  text-decoration: line-through;
+  color: #aaa;
+}
+
+.todo-add-btn {
+  display: block;
+  width: 100%;
+  padding: 1rem;
+  text-align: center;
+  background-color: var(--card-bg);
+  border: none;
+  border-radius: 20px;
+  box-shadow: var(--box-shadow);
+  color: var(--primary-color);
+  font-size: 1rem;
+  margin-top: 1rem;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.todo-add-btn:hover {
+  background-color: #f8f8f8;
+}
+
+/* コインセクション */
+.coin-section {
+  margin: 1.5rem 0;
+  text-align: center;
+}
+
+.coin-info {
+  display: inline-flex;
+  align-items: center;
+  background-color: var(--secondary-color);
+  padding: 0.5rem 1rem;
+  border-radius: 20px;
+  color: white;
+}
+
+.coin-icon {
+  font-size: 1.2rem;
+  margin-right: 0.5rem;
+}
+
+.coin-amount {
+  font-weight: bold;
+}
+
+/* モーダル */
+.modal {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 1000;
+  justify-content: center;
+  align-items: center;
+}
+
+.modal.active {
+  display: flex;
+}
+
+.modal-content {
+  background-color: var(--card-bg);
+  border-radius: 20px;
+  padding: 1.5rem;
+  width: 90%;
+  max-width: 400px;
+  box-shadow: var(--box-shadow);
+}
+
+.modal-title {
+  font-size: 1.2rem;
+  margin-bottom: 1rem;
+  color: var(--text-color);
+}
+
+.modal-form {
+  margin-bottom: 1rem;
+}
+
+.modal-input {
+  width: 100%;
+  padding: 0.8rem;
+  border: 1px solid var(--light-gray);
+  border-radius: 10px;
+  font-size: 1rem;
+  margin-bottom: 1rem;
+}
+
+.modal-buttons {
+  display: flex;
+  justify-content: space-between;
+}
+
+.modal-btn {
+  padding: 0.8rem;
+  border: none;
+  border-radius: 10px;
+  font-size: 1rem;
+  cursor: pointer;
+}
+
+.modal-btn.cancel {
+  background-color: #f1f1f1;
+  color: var(--text-color);
+  flex: 1;
+  margin-right: 0.5rem;
+}
+
+.modal-btn.save {
+  background-color: var(--primary-color);
+  color: white;
+  flex: 1;
+  margin-left: 0.5rem;
+}
+
+/* アニメーション */
+@keyframes bounce {
+  0%, 20%, 50%, 80%, 100% {
+    transform: translateY(0);
+  }
+  40% {
+    transform: translateY(-20px);
+  }
+  60% {
+    transform: translateY(-10px);
+  }
+}
+
+.bounce {
+  animation: bounce 1s;
+}
+
+/* レスポンシブ */
+@media (max-width: 480px) {
+  .container {
+    padding: 0.5rem;
+  }
+  
+  .penguin-container, .mood-selector, .todo-list {
+    border-radius: 15px;
+  }
+  
+  .todo-item {
+    padding: 0.8rem;
+  }
+  
+  .mood-emoji {
+    font-size: 1.5rem;
+  }
+}
