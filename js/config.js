@@ -11,7 +11,7 @@ const isProduction = window.location.hostname !== 'localhost' &&
 const getRedirectUrl = () => {
   if (isProduction) {
     // 本番環境: 現在のドメインを使用
-    return window.location.origin;
+    return window.location.origin + '/PenPenApp/';
   } else {
     // 開発環境: ローカルサーバー
     return 'http://localhost:5500';
