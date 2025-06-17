@@ -50,6 +50,9 @@ const toggleLoginBtn = document.getElementById('toggleLoginBtn');
 const loginBtn = document.getElementById('loginBtn');
 const signupBtn = document.getElementById('signupBtn');
 
+// 気分ボタン・ToDoリストの親要素取得
+const moodContainer = document.getElementById('moodContainer'); // 必要に応じてHTML側も確認
+
 // Supabaseクライアントを初期化
 function initSupabase() {
   try {
@@ -65,23 +68,33 @@ function initSupabase() {
 
 // アプリの初期化
 async function initApp() {
-  console.log('Initializing app');
-  
-  // Supabaseクライアントを初期化
-  initSupabase();
-  
-  if (!supabaseClient) {
-    console.error('Supabase client is not available');
-    showLoginScreen();
-    return;
-  }
-  
-  // イベントリスナーを最初に一度だけ設定
-  setupEventListeners();
-  
-  // 認証状態の変化を監視
-  supabaseClient.auth.onAuthStateChange(async (event, session) => {
-    console.log('Auth state changed:', event, session ? 'with session' : 'no session');
+  try {
+    console.log('Initializing app');
+    
+    // DOM要素の存在確認
+    if (!loginScreen || !appScreen) {
+      console.error('Required DOM elements not found:', {
+        loginScreen: !!loginScreen,
+        appScreen: !!appScreen
+      });
+      return;
+    }
+    
+    // Supabaseクライアントを初期化
+    initSupabase();
+    
+    if (!supabaseClient) {
+      console.error('Supabase client is not available');
+      showLoginScreen();
+      return;
+    }
+    
+    // イベントリスナーを最初に一度だけ設定
+    setupEventListeners();
+    
+    // 認証状態の変化を監視
+    supabaseClient.auth.onAuthStateChange(async (event, session) => {
+      console.log('Auth state changed:', event, session ? 'with session' : 'no session');
     
     if (event === 'SIGNED_IN' && session) {
       userData.id = session.user.id;
@@ -127,6 +140,17 @@ async function initApp() {
   }
   
   console.log('App initialization completed');
+  
+  } catch (error) {
+    console.error('Error during app initialization:', error);
+    // フォールバック: ログイン画面を表示
+    if (loginScreen) {
+      loginScreen.style.display = 'block';
+    }
+    if (appScreen) {
+      appScreen.style.display = 'none';
+    }
+  }
 }
 
 // ログイン画面の表示
@@ -330,14 +354,14 @@ function removeEventListeners() {
     notificationToggle.removeEventListener('change', eventHandlers.notificationToggle);
   }
   
-  // 気分ボタンのイベントリスナーを削除
-  if (eventHandlers.moodButtons && eventHandlers.moodButtons.length > 0) {
-    eventHandlers.moodButtons.forEach((handler, index) => {
-      const btn = document.querySelectorAll('.mood-btn')[index];
-      if (btn && handler) {
-        btn.removeEventListener('click', handler);
-      }
-    });
+  // 気分ボタンのイベントリスナーを削除（委譲方式）
+  if (eventHandlers.moodContainerClick && moodContainer) {
+    moodContainer.removeEventListener('click', eventHandlers.moodContainerClick);
+  }
+  
+  // ToDoリストのイベントリスナーを削除（委譲方式）
+  if (eventHandlers.todoListClick && todoList) {
+    todoList.removeEventListener('click', eventHandlers.todoListClick);
   }
   
   // ドキュメントクリックイベントを削除
@@ -453,25 +477,29 @@ function setupEventListeners() {
     notificationToggle.addEventListener('change', eventHandlers.notificationToggle);
   }
   
-  // 気分選択ボタンのイベントリスナーを追加
-  const moodButtons = document.querySelectorAll('.mood-btn');
-  eventHandlers.moodButtons = [];
-  moodButtons.forEach((btn, index) => {
-    const handler = async () => {
-      const mood = btn.getAttribute('data-mood');
-      
-      // 以前の選択を解除
-      moodButtons.forEach(b => b.classList.remove('selected'));
-      
-      // 新しい選択を適用
-      btn.classList.add('selected');
-      
-      // 気分データを保存
+  // 気分ボタンのイベントリスナー（委譲方式）
+  eventHandlers.moodContainerClick = async (e) => {
+    if (e.target.classList.contains('mood-btn')) {
+      const mood = e.target.getAttribute('data-mood');
+      document.querySelectorAll('.mood-btn').forEach(b => b.classList.remove('selected'));
+      e.target.classList.add('selected');
       await saveMood(mood);
-    };
-    eventHandlers.moodButtons[index] = handler;
-    btn.addEventListener('click', handler);
-  });
+    }
+  };
+  if (moodContainer) {
+    moodContainer.addEventListener('click', eventHandlers.moodContainerClick);
+  }
+  
+  // ToDoリストのイベントリスナー（委譲方式）
+  eventHandlers.todoListClick = (e) => {
+    if (e.target.classList.contains('todo-item')) {
+      // ここでToDoの完了処理や詳細表示などを実装
+      // 例: completeTodo(e.target.dataset.todoId);
+    }
+  };
+  if (todoList) {
+    todoList.addEventListener('click', eventHandlers.todoListClick);
+  }
   
   // ドキュメントクリックイベントを追加
   document.addEventListener('click', eventHandlers.documentClick);
@@ -939,9 +967,9 @@ function updatePenguinState() {
   
   // ペンギンの画像を設定
   if (penguinState === 'happy') {
-    penguinImage.src = 'images/dafb7d72ab884e9fa70e2bc20ce0ff81.png';
+    penguinImage.src = 'images/Whisk_101df87b2d.jpg';
   } else if (penguinState === 'sad') {
-    penguinImage.src = 'images/ae4c6fbfd1cd4e879a84008900bc7943.png';
+    penguinImage.src = 'images/Whisk_storyboard25acca203c6c4825ad9bc5b5.png';
   } else {
     penguinImage.src = 'images/55b5453a51a444569199c2ab5b5d4e4a.png';
   }
@@ -1039,6 +1067,39 @@ function requestNotificationPermission() {
 
 // ページ読み込み時に初期化
 document.addEventListener('DOMContentLoaded', () => {
-  initApp();
-  requestNotificationPermission();
+  console.log('DOM Content Loaded - Starting app initialization');
+  try {
+    initApp();
+    requestNotificationPermission();
+  } catch (error) {
+    console.error('Error during DOMContentLoaded initialization:', error);
+    // 緊急フォールバック: 直接ログイン画面を表示
+    const loginScreen = document.getElementById('loginScreen');
+    const appScreen = document.getElementById('appScreen');
+    if (loginScreen) {
+      loginScreen.style.display = 'block';
+      console.log('Emergency fallback: Login screen displayed');
+    }
+    if (appScreen) {
+      appScreen.style.display = 'none';
+    }
+  }
+});
+
+// ウィンドウ読み込み完了時のフォールバック
+window.addEventListener('load', () => {
+  console.log('Window loaded - Checking if app is initialized');
+  const loginScreen = document.getElementById('loginScreen');
+  const appScreen = document.getElementById('appScreen');
+  
+  // もしどちらの画面も表示されていない場合、ログイン画面を表示
+  if (loginScreen && appScreen) {
+    const loginVisible = loginScreen.style.display !== 'none';
+    const appVisible = appScreen.style.display !== 'none';
+    
+    if (!loginVisible && !appVisible) {
+      console.log('No screen visible - showing login screen as fallback');
+      loginScreen.style.display = 'block';
+    }
+  }
 });
