@@ -39,6 +39,12 @@ const googleLoginBtn = document.getElementById('googleLoginBtn');
 const emailLoginToggleBtn = document.getElementById('emailLoginToggleBtn');
 const loginForm = document.getElementById('loginForm');
 const signupForm = document.getElementById('signupForm');
+
+// デバッグ用ログ
+console.log('DOM elements loaded:');
+console.log('emailLoginToggleBtn:', emailLoginToggleBtn);
+console.log('loginForm:', loginForm);
+console.log('signupForm:', signupForm);
 const toggleSignupBtn = document.getElementById('toggleSignupBtn');
 const toggleLoginBtn = document.getElementById('toggleLoginBtn');
 const loginBtn = document.getElementById('loginBtn');
@@ -111,6 +117,21 @@ async function initApp() {
 function showLoginScreen() {
   loginScreen.style.display = 'block';
   appScreen.style.display = 'none';
+  
+  // メールログインボタンを再表示
+  if (emailLoginToggleBtn) {
+    emailLoginToggleBtn.style.display = 'block';
+  }
+  
+  // ログインフォームを非表示
+  if (loginForm) {
+    loginForm.classList.remove('active');
+  }
+  
+  // サインアップフォームを非表示
+  if (signupForm) {
+    signupForm.classList.remove('active');
+  }
 }
 
 // アプリ画面の表示
@@ -233,13 +254,38 @@ async function saveUserData() {
   }
 }
 
-// イベントリスナーの設定
+// イベントリスナーの設定（重複防止フラグ）
+let eventListenersSetup = false;
+
 function setupEventListeners() {
+  // 既にセットアップ済みの場合は何もしない
+  if (eventListenersSetup) {
+    console.log('Event listeners already setup, skipping...');
+    return;
+  }
+  
+  console.log('Setting up event listeners...');
+  eventListenersSetup = true;
   // 認証関連
   googleLoginBtn?.addEventListener('click', handleGoogleLogin);
   emailLoginToggleBtn?.addEventListener('click', () => {
-    loginForm.classList.add('active');
-    emailLoginToggleBtn.style.display = 'none';
+    console.log('Email login button clicked');
+    console.log('loginForm element:', loginForm);
+    console.log('emailLoginToggleBtn element:', emailLoginToggleBtn);
+    
+    if (loginForm) {
+      loginForm.classList.add('active');
+      console.log('Added active class to loginForm');
+    } else {
+      console.error('loginForm element not found');
+    }
+    
+    if (emailLoginToggleBtn) {
+      emailLoginToggleBtn.style.display = 'none';
+      console.log('Hidden emailLoginToggleBtn');
+    } else {
+      console.error('emailLoginToggleBtn element not found');
+    }
   });
   
   toggleSignupBtn?.addEventListener('click', () => {
