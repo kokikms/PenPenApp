@@ -5,59 +5,127 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>ペンペンと一緒に - ToDo &amp; 気分記録</title>
   <link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@300;400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,0,0" />
   <link rel="stylesheet" href="css/style.css">
+  <meta name="description" content="ペンペンと一緒にToDoと気分を記録して、毎日を楽しく過ごしましょう。かわいいペンギンのペンペンがあなたを応援します！">
+  <meta name="theme-color" content="#6aa4d9">
+  <link rel="icon" href="images/55b5453a51a444569199c2ab5b5d4e4a.png">
 </head>
 <body>
   <div class="container">
-    <header>
-      <h1>ペンペンと一緒に</h1>
-    </header>
-    
-    <!-- ペンギン表示エリア -->
-    <div class="penguin-container">
-      <img id="penguinImage" class="penguin-image" src="images/55b5453a51a444569199c2ab5b5d4e4a.png" alt="ペンペン">
-      <div id="penguinSpeech" class="penguin-speech">
-        おはよう〜今日もいっしょにいこ〜
+    <!-- ログイン画面 -->
+    <div id="loginScreen" class="login-container">
+      <h2 class="login-title">ペンペンと一緒に</h2>
+      <img src="images/dafb7d72ab884e9fa70e2bc20ce0ff81.png" alt="ペンペン" class="login-penguin">
+      <button id="googleLoginBtn" class="login-btn google">Googleでログイン</button>
+      <button id="emailLoginToggleBtn" class="login-btn email">メールアドレスでログイン</button>
+      
+      <!-- メールログインフォーム -->
+      <div id="loginForm" class="login-form">
+        <div class="form-group">
+          <label for="email" class="form-label">メールアドレス</label>
+          <input type="email" id="email" class="form-input" required>
+        </div>
+        <div class="form-group">
+          <label for="password" class="form-label">パスワード</label>
+          <input type="password" id="password" class="form-input" required>
+        </div>
+        <button id="loginBtn" class="login-btn">ログイン</button>
+        <button id="toggleSignupBtn" class="toggle-form">アカウントを作成する</button>
+      </div>
+      
+      <!-- サインアップフォーム -->
+      <div id="signupForm" class="login-form">
+        <div class="form-group">
+          <label for="signupEmail" class="form-label">メールアドレス</label>
+          <input type="email" id="signupEmail" class="form-input" required>
+        </div>
+        <div class="form-group">
+          <label for="signupPassword" class="form-label">パスワード</label>
+          <input type="password" id="signupPassword" class="form-input" required>
+        </div>
+        <div class="form-group">
+          <label for="username" class="form-label">ニックネーム</label>
+          <input type="text" id="username" class="form-input" required>
+        </div>
+        <button id="signupBtn" class="login-btn">アカウント作成</button>
+        <button id="toggleLoginBtn" class="toggle-form">ログイン画面に戻る</button>
       </div>
     </div>
     
-    <!-- 気分セレクター -->
-    <div class="mood-section">
-      <h2 class="mood-title">今日の気分は？</h2>
-      <div class="mood-selector">
-        <button class="mood-btn" data-mood="happy">
-          <span class="mood-emoji">😊</span>
-          <span class="mood-label">うれしい</span>
+    <!-- メインアプリ画面 (ログイン後に表示) -->
+    <div id="appScreen" style="display: none;">
+      <header>
+        <h1>ペンペンと一緒に</h1>
+        <button id="settingsBtn" class="settings-btn">
+          <span class="material-symbols-rounded">settings</span>
         </button>
-        <button class="mood-btn" data-mood="normal">
-          <span class="mood-emoji">😌</span>
-          <span class="mood-label">ふつう</span>
-        </button>
-        <button class="mood-btn" data-mood="tired">
-          <span class="mood-emoji">😓</span>
-          <span class="mood-label">つかれた</span>
-        </button>
-        <button class="mood-btn" data-mood="sad">
-          <span class="mood-emoji">😢</span>
-          <span class="mood-label">かなしい</span>
-        </button>
+        <div id="userMenu" class="user-menu">
+          <div id="profileMenuItem" class="user-menu-item">プロフィール</div>
+          <div id="logoutMenuItem" class="user-menu-item">ログアウト</div>
+        </div>
+      </header>
+      
+      <!-- ペンギン表示エリア -->
+      <div class="penguin-container">
+        <img id="penguinImage" class="penguin-image" src="images/55b5453a51a444569199c2ab5b5d4e4a.png" alt="ペンペン">
+        <div id="penguinSpeech" class="penguin-speech">
+          おはよう〜今日もいっしょにいこ〜
+        </div>
       </div>
-    </div>
-    
-    <!-- タスクリスト -->
-    <div class="todo-section">
-      <h2 class="todo-title">今日のタスク</h2>
-      <div id="todoList" class="todo-list">
-        <!-- JavaScriptでタスクが追加されます -->
+      
+      <!-- 気分セレクター -->
+      <div class="mood-section">
+        <h2 class="mood-title">今日の気分は？</h2>
+        <div class="mood-selector">
+          <button class="mood-btn" data-mood="happy">
+            <span class="mood-emoji">😊</span>
+            <span class="mood-label">うれしい</span>
+          </button>
+          <button class="mood-btn" data-mood="normal">
+            <span class="mood-emoji">😌</span>
+            <span class="mood-label">ふつう</span>
+          </button>
+          <button class="mood-btn" data-mood="tired">
+            <span class="mood-emoji">😓</span>
+            <span class="mood-label">つかれた</span>
+          </button>
+          <button class="mood-btn" data-mood="sad">
+            <span class="mood-emoji">😢</span>
+            <span class="mood-label">かなしい</span>
+          </button>
+        </div>
       </div>
-      <button id="addTodoBtn" class="todo-add-btn">＋ タスクを追加</button>
-    </div>
-    
-    <!-- コイン情報 -->
-    <div class="coin-section">
-      <div class="coin-info">
-        <span class="coin-icon">🪙</span>
-        <span id="coinAmount" class="coin-amount">0</span> コイン
+      
+      <!-- タスクリスト -->
+      <div class="todo-section">
+        <h2 class="todo-title">今日のタスク</h2>
+        <div id="todoList" class="todo-list">
+          <!-- JavaScriptでタスクが追加されます -->
+        </div>
+        <button id="addTodoBtn" class="todo-add-btn">＋ タスクを追加</button>
+      </div>
+      
+      <!-- 島ステータス -->
+      <div class="island-status">
+        <div class="island-info">
+          <span class="island-icon">🏝️</span>
+          <span class="island-level">ペンペンの島：レベル <span id="islandLevel">1</span></span>
+        </div>
+        <div class="coin-info">
+          <span class="coin-icon">🪙</span>
+          <span id="coinAmount" class="coin-amount">0</span>
+        </div>
+      </div>
+      
+      <!-- 島の画面 (クリックで表示) -->
+      <div id="islandContainer" class="island-container">
+        <div class="island-scene">
+          <img id="islandPenguin" class="island-penguin walking" src="images/55b5453a51a444569199c2ab5b5d4e4a.png" alt="ペンペン">
+        </div>
+        <div class="island-shop">
+          <!-- JavaScriptでショップアイテムが追加されます -->
+        </div>
       </div>
     </div>
   </div>
@@ -68,6 +136,14 @@
       <h3 class="modal-title">タスクを追加</h3>
       <div class="modal-form">
         <input type="text" id="todoInput" class="modal-input" placeholder="タスク名を入力" required>
+        <div class="notification-toggle">
+          <span class="toggle-label">🔔 通知：</span>
+          <label class="toggle-switch">
+            <input type="checkbox" id="notificationToggle">
+            <span class="toggle-slider"></span>
+          </label>
+          <input type="time" id="notificationTime" style="display: none; margin-left: 10px;">
+        </div>
       </div>
       <div class="modal-buttons">
         <button id="cancelTodoBtn" class="modal-btn cancel">キャンセル</button>
@@ -76,6 +152,10 @@
     </div>
   </div>
 
+  <script src="https://public.youware.com/users-website-assets/prod/2e47e800-241e-4f62-84d3-93b74b7977d2/supabase-js@2"></script>
+  <script src="js/config.js"></script>
   <script src="js/app.js"></script>
+  <script src="js/history.js"></script>
+  <script src="js/shop.js"></script>
 </body>
 </html>
