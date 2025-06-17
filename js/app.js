@@ -3,6 +3,12 @@
 // Supabaseクライアントの初期化
 let supabaseClient;
 
+// イベントリスナーの重複登録を防ぐフラグ
+let eventListenersSetup = false;
+
+// イベントハンドラーの参照を保持
+let eventHandlers = {};
+
 // ユーザーデータ
 let userData = {
   id: null,
@@ -59,6 +65,8 @@ function initSupabase() {
 
 // アプリの初期化
 async function initApp() {
+  console.log('Initializing app');
+  
   // Supabaseクライアントを初期化
   initSupabase();
   
@@ -68,8 +76,13 @@ async function initApp() {
     return;
   }
   
+  // イベントリスナーを最初に一度だけ設定
+  setupEventListeners();
+  
   // 認証状態の変化を監視
   supabaseClient.auth.onAuthStateChange(async (event, session) => {
+    console.log('Auth state changed:', event, session ? 'with session' : 'no session');
+    
     if (event === 'SIGNED_IN' && session) {
       userData.id = session.user.id;
       await loadUserData();
@@ -90,27 +103,59 @@ async function initApp() {
     }
   });
   
-  // ログイン状態をチェック
-  const { data: { user }, error } = await supabaseClient.auth.getUser();
+  // 初期ログイン状態をチェック（セッションとユーザー情報の両方を確認）
+  const { data: { session }, error: sessionError } = await supabaseClient.auth.getSession();
+  const { data: { user }, error: userError } = await supabaseClient.auth.getUser();
   
-  if (user) {
+  console.log('Initial auth check:', {
+    session: session ? 'exists' : 'none',
+    user: user ? 'exists' : 'none',
+    sessionError,
+    userError
+  });
+  
+  if ((session && session.user) || user) {
     // ログイン済みの場合
-    userData.id = user.id;
+    userData.id = (session?.user?.id || user?.id);
+    console.log('User is logged in, loading data and showing app screen');
     await loadUserData();
     showAppScreen();
   } else {
     // 未ログインの場合
+    console.log('User is not logged in, showing login screen');
     showLoginScreen();
   }
   
-  // イベントリスナーの設定
-  setupEventListeners();
+  console.log('App initialization completed');
 }
 
 // ログイン画面の表示
 function showLoginScreen() {
-  loginScreen.style.display = 'block';
-  appScreen.style.display = 'none';
+  console.log('Showing login screen');
+  
+  // DOM状態をリセット
+  if (loginForm) {
+    loginForm.classList.remove('active');
+  }
+  if (signupForm) {
+    signupForm.classList.remove('active');
+  }
+  if (emailLoginToggleBtn) {
+    emailLoginToggleBtn.style.display = 'block';
+  }
+  if (userMenu) {
+    userMenu.classList.remove('active');
+  }
+  
+  // 画面表示を切り替え
+  if (loginScreen) {
+    loginScreen.style.display = 'block';
+  }
+  if (appScreen) {
+    appScreen.style.display = 'none';
+  }
+  
+  console.log('Login screen displayed');
 }
 
 // アプリ画面の表示
@@ -233,54 +278,186 @@ async function saveUserData() {
   }
 }
 
+// イベントリスナーの削除
+function removeEventListeners() {
+  console.log('Removing existing event listeners');
+  
+  // 認証関連のイベントリスナーを削除
+  if (eventHandlers.googleLogin && googleLoginBtn) {
+    googleLoginBtn.removeEventListener('click', eventHandlers.googleLogin);
+  }
+  if (eventHandlers.emailLoginToggle && emailLoginToggleBtn) {
+    emailLoginToggleBtn.removeEventListener('click', eventHandlers.emailLoginToggle);
+  }
+  if (eventHandlers.toggleSignup && toggleSignupBtn) {
+    toggleSignupBtn.removeEventListener('click', eventHandlers.toggleSignup);
+  }
+  if (eventHandlers.toggleLogin && toggleLoginBtn) {
+    toggleLoginBtn.removeEventListener('click', eventHandlers.toggleLogin);
+  }
+  if (eventHandlers.emailLogin && loginBtn) {
+    loginBtn.removeEventListener('click', eventHandlers.emailLogin);
+  }
+  if (eventHandlers.signup && signupBtn) {
+    signupBtn.removeEventListener('click', eventHandlers.signup);
+  }
+  if (eventHandlers.logout && logoutMenuItem) {
+    logoutMenuItem.removeEventListener('click', eventHandlers.logout);
+  }
+  
+  // UI関連のイベントリスナーを削除
+  if (eventHandlers.settings && settingsBtn) {
+    settingsBtn.removeEventListener('click', eventHandlers.settings);
+  }
+  if (eventHandlers.islandStatus) {
+    const islandStatusElement = document.querySelector('.island-status');
+    if (islandStatusElement) {
+      islandStatusElement.removeEventListener('click', eventHandlers.islandStatus);
+    }
+  }
+  
+  // タスク関連のイベントリスナーを削除
+  if (eventHandlers.addTodo && addTodoBtn) {
+    addTodoBtn.removeEventListener('click', eventHandlers.addTodo);
+  }
+  if (eventHandlers.cancelTodo && cancelTodoBtn) {
+    cancelTodoBtn.removeEventListener('click', eventHandlers.cancelTodo);
+  }
+  if (eventHandlers.saveTodo && saveTodoBtn) {
+    saveTodoBtn.removeEventListener('click', eventHandlers.saveTodo);
+  }
+  if (eventHandlers.notificationToggle && notificationToggle) {
+    notificationToggle.removeEventListener('change', eventHandlers.notificationToggle);
+  }
+  
+  // 気分ボタンのイベントリスナーを削除
+  if (eventHandlers.moodButtons && eventHandlers.moodButtons.length > 0) {
+    eventHandlers.moodButtons.forEach((handler, index) => {
+      const btn = document.querySelectorAll('.mood-btn')[index];
+      if (btn && handler) {
+        btn.removeEventListener('click', handler);
+      }
+    });
+  }
+  
+  // ドキュメントクリックイベントを削除
+  if (eventHandlers.documentClick) {
+    document.removeEventListener('click', eventHandlers.documentClick);
+  }
+  
+  // ハンドラー参照をクリア
+  eventHandlers = {};
+}
+
 // イベントリスナーの設定
 function setupEventListeners() {
-  // 認証関連
-  googleLoginBtn?.addEventListener('click', handleGoogleLogin);
-  emailLoginToggleBtn?.addEventListener('click', () => {
-    loginForm.classList.add('active');
-    emailLoginToggleBtn.style.display = 'none';
-  });
+  // 既にセットアップ済みの場合は重複を防ぐ
+  if (eventListenersSetup) {
+    console.log('Event listeners already setup, removing existing ones first');
+    removeEventListeners();
+  }
   
-  toggleSignupBtn?.addEventListener('click', () => {
-    loginForm.classList.remove('active');
-    signupForm.classList.add('active');
-  });
+  console.log('Setting up event listeners');
   
-  toggleLoginBtn?.addEventListener('click', () => {
-    signupForm.classList.remove('active');
-    loginForm.classList.add('active');
-  });
-  
-  loginBtn?.addEventListener('click', handleEmailLogin);
-  signupBtn?.addEventListener('click', handleSignup);
-  logoutMenuItem?.addEventListener('click', handleLogout);
-  
-  // 設定メニュー
-  settingsBtn?.addEventListener('click', () => {
-    userMenu.classList.toggle('active');
-  });
-  
-  // 島の表示切替
-  document.querySelector('.island-status')?.addEventListener('click', () => {
-    islandContainer.classList.toggle('active');
-  });
-  
-  // タスク関連
-  addTodoBtn?.addEventListener('click', showTodoModal);
-  cancelTodoBtn?.addEventListener('click', hideTodoModal);
-  saveTodoBtn?.addEventListener('click', saveTodo);
-  
-  notificationToggle?.addEventListener('change', () => {
-    if (notificationTime) {
+  // イベントハンドラーを定義
+  eventHandlers.googleLogin = handleGoogleLogin;
+  eventHandlers.emailLoginToggle = () => {
+    if (loginForm && emailLoginToggleBtn) {
+      loginForm.classList.add('active');
+      emailLoginToggleBtn.style.display = 'none';
+    }
+  };
+  eventHandlers.toggleSignup = () => {
+    if (loginForm && signupForm) {
+      loginForm.classList.remove('active');
+      signupForm.classList.add('active');
+    }
+  };
+  eventHandlers.toggleLogin = () => {
+    if (signupForm && loginForm) {
+      signupForm.classList.remove('active');
+      loginForm.classList.add('active');
+    }
+  };
+  eventHandlers.emailLogin = handleEmailLogin;
+  eventHandlers.signup = handleSignup;
+  eventHandlers.logout = handleLogout;
+  eventHandlers.settings = () => {
+    if (userMenu) {
+      userMenu.classList.toggle('active');
+    }
+  };
+  eventHandlers.islandStatus = () => {
+    if (islandContainer) {
+      islandContainer.classList.toggle('active');
+    }
+  };
+  eventHandlers.addTodo = showTodoModal;
+  eventHandlers.cancelTodo = hideTodoModal;
+  eventHandlers.saveTodo = saveTodo;
+  eventHandlers.notificationToggle = () => {
+    if (notificationTime && notificationToggle) {
       notificationTime.style.display = notificationToggle.checked ? 'inline-block' : 'none';
     }
-  });
+  };
+  eventHandlers.documentClick = (e) => {
+    if (settingsBtn && userMenu && e.target !== settingsBtn && !userMenu.contains(e.target)) {
+      userMenu.classList.remove('active');
+    }
+  };
   
-  // 気分選択
+  // 認証関連のイベントリスナーを追加
+  if (googleLoginBtn) {
+    googleLoginBtn.addEventListener('click', eventHandlers.googleLogin);
+  }
+  if (emailLoginToggleBtn) {
+    emailLoginToggleBtn.addEventListener('click', eventHandlers.emailLoginToggle);
+  }
+  if (toggleSignupBtn) {
+    toggleSignupBtn.addEventListener('click', eventHandlers.toggleSignup);
+  }
+  if (toggleLoginBtn) {
+    toggleLoginBtn.addEventListener('click', eventHandlers.toggleLogin);
+  }
+  if (loginBtn) {
+    loginBtn.addEventListener('click', eventHandlers.emailLogin);
+  }
+  if (signupBtn) {
+    signupBtn.addEventListener('click', eventHandlers.signup);
+  }
+  if (logoutMenuItem) {
+    logoutMenuItem.addEventListener('click', eventHandlers.logout);
+  }
+  
+  // UI関連のイベントリスナーを追加
+  if (settingsBtn) {
+    settingsBtn.addEventListener('click', eventHandlers.settings);
+  }
+  
+  const islandStatusElement = document.querySelector('.island-status');
+  if (islandStatusElement) {
+    islandStatusElement.addEventListener('click', eventHandlers.islandStatus);
+  }
+  
+  // タスク関連のイベントリスナーを追加
+  if (addTodoBtn) {
+    addTodoBtn.addEventListener('click', eventHandlers.addTodo);
+  }
+  if (cancelTodoBtn) {
+    cancelTodoBtn.addEventListener('click', eventHandlers.cancelTodo);
+  }
+  if (saveTodoBtn) {
+    saveTodoBtn.addEventListener('click', eventHandlers.saveTodo);
+  }
+  if (notificationToggle) {
+    notificationToggle.addEventListener('change', eventHandlers.notificationToggle);
+  }
+  
+  // 気分選択ボタンのイベントリスナーを追加
   const moodButtons = document.querySelectorAll('.mood-btn');
-  moodButtons.forEach(btn => {
-    btn.addEventListener('click', async () => {
+  eventHandlers.moodButtons = [];
+  moodButtons.forEach((btn, index) => {
+    const handler = async () => {
       const mood = btn.getAttribute('data-mood');
       
       // 以前の選択を解除
@@ -291,15 +468,17 @@ function setupEventListeners() {
       
       // 気分データを保存
       await saveMood(mood);
-    });
+    };
+    eventHandlers.moodButtons[index] = handler;
+    btn.addEventListener('click', handler);
   });
   
-  // 画面クリック時にメニューを閉じる
-  document.addEventListener('click', (e) => {
-    if (settingsBtn && userMenu && e.target !== settingsBtn && !userMenu.contains(e.target)) {
-      userMenu.classList.remove('active');
-    }
-  });
+  // ドキュメントクリックイベントを追加
+  document.addEventListener('click', eventHandlers.documentClick);
+  
+  // フラグを設定
+  eventListenersSetup = true;
+  console.log('Event listeners setup completed');
 }
 
 // Googleログイン処理
