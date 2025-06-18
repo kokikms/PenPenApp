@@ -113,16 +113,6 @@ async function initApp() {
       return;
     }
     
-    // デバッグ用：テーブルアクセステストを自動実行
-    console.log('Running automatic table access tests...');
-    setTimeout(() => {
-      if (typeof runAllTableTests === 'function') {
-        runAllTableTests();
-      } else {
-        console.warn('runAllTableTests function not found');
-      }
-    }, 1000); // Supabase初期化後1秒待ってから実行
-    
     // イベントリスナーを最初に一度だけ設定
     setupEventListeners();
     
@@ -170,9 +160,30 @@ async function initApp() {
   if ((session && session.user) || user) {
     // ログイン済みの場合
     userData.id = (session?.user?.id || user?.id);
-    console.log('User is logged in, loading data and showing app screen');
-    await loadUserData();
-    showAppScreen();
+    console.log('User is logged in, showing app screen immediately with cached data');
+    
+    // キャッシュされたデータがあれば即座に画面を表示
+    const hasValidCache = loadCachedDataAndShowScreen();
+    
+    if (hasValidCache) {
+      // キャッシュデータで画面表示後、バックグラウンドでデータを更新
+      console.log('Showing app with cached data, updating in background');
+      loadUserData().then(() => {
+        console.log('Background data update completed');
+        // データ更新後に画面を再描画
+        updatePenguinState();
+        renderTodos();
+        updateCoinsDisplay();
+        updateIslandLevel();
+      }).catch(error => {
+        console.error('Background data update failed:', error);
+      });
+    } else {
+      // キャッシュがない場合は通常通りデータ読み込み後に表示
+      console.log('No valid cache, loading data normally');
+      await loadUserData();
+      showAppScreen();
+    }
   } else {
     // 未ログインの場合
     console.log('User is not logged in, showing login screen');
@@ -225,6 +236,63 @@ function showLoginScreen() {
   }
   
   console.log('Login screen displayed');
+}
+
+// キャッシュされたデータを読み込んで即座に画面表示
+function loadCachedDataAndShowScreen() {
+  try {
+    const saved = localStorage.getItem('penpenUserData');
+    const sessionInfo = localStorage.getItem('penpen-session-info');
+    
+    if (!saved || !sessionInfo) {
+      console.log('No cached data or session info found');
+      return false;
+    }
+    
+    const sessionData = JSON.parse(sessionInfo);
+    const now = new Date().getTime();
+    
+    // セッション情報が24時間以内かチェック
+    if (now - sessionData.timestamp > 24 * 60 * 60 * 1000) {
+      console.log('Cached session info is too old');
+      localStorage.removeItem('penpen-session-info');
+      return false;
+    }
+    
+    // ユーザーIDが一致するかチェック
+    if (sessionData.userId !== userData.id) {
+      console.log('Cached session user ID does not match current user');
+      localStorage.removeItem('penpen-session-info');
+      return false;
+    }
+    
+    const localData = JSON.parse(saved);
+    
+    // キャッシュデータをuserDataに適用
+    userData.name = localData.name || 'ユーザー';
+    userData.coins = localData.coins || 0;
+    userData.streakDays = localData.streakDays || 0;
+    userData.lastVisit = localData.lastVisit || new Date().toISOString();
+    userData.islandLevel = localData.islandLevel || 1;
+    userData.todos = localData.todos || [];
+    userData.moods = localData.moods || [];
+    userData.items = localData.items || [];
+    
+    console.log('Loaded cached data:', {
+      name: userData.name,
+      coins: userData.coins,
+      todosCount: userData.todos.length,
+      moodsCount: userData.moods.length
+    });
+    
+    // 即座に画面を表示
+    showAppScreen();
+    
+    return true;
+  } catch (error) {
+    console.error('Error loading cached data:', error);
+    return false;
+  }
 }
 
 // アプリ画面の表示
@@ -284,6 +352,14 @@ async function loadUserData() {
       userData.islandLevel = profile.level || 1;
     }
     
+    // セッション情報をローカルストレージに保存（タイムスタンプ付き）
+    const sessionInfo = {
+      userId: userData.id,
+      timestamp: new Date().getTime(),
+      lastUpdate: new Date().toISOString()
+    };
+    localStorage.setItem('penpen-session-info', JSON.stringify(sessionInfo));
+    
     // ToDosを取得
     const { data: todos, error: todosError } = await supabaseClient
       .from('todos')
@@ -322,6 +398,20 @@ async function loadUserData() {
       userData.items = items;
     }
     
+    // データ取得成功時にローカルストレージを更新
+    const dataToCache = {
+      name: userData.name,
+      coins: userData.coins,
+      streakDays: userData.streakDays,
+      lastVisit: userData.lastVisit,
+      islandLevel: userData.islandLevel,
+      todos: userData.todos,
+      moods: userData.moods,
+      items: userData.items
+    };
+    localStorage.setItem('penpenUserData', JSON.stringify(dataToCache));
+    console.log('Updated cached user data');
+    
   } catch (error) {
     console.error('データの読み込みエラー:', error);
     // エラー時はローカルストレージのデータがあれば使用
@@ -332,64 +422,6 @@ async function loadUserData() {
     }
   }
 }
-
-// デバッグ用：各テーブルへの個別アクセステスト
-const testProfileAccess = async () => {
-  console.log('Testing profile access...');
-  const { data, error } = await supabaseClient
-    .from('profiles')
-    .select('*')
-    .eq('id', userData.id);
-  console.log('Profile result:', { data, error });
-};
-
-const testTodosAccess = async () => {
-  console.log('Testing todos access...');
-  const { data, error } = await supabaseClient
-    .from('todos')
-    .select('*')
-    .eq('user_id', userData.id);
-  console.log('Todos result:', { data, error });
-};
-
-const testMoodsAccess = async () => {
-  console.log('Testing moods access...');
-  const { data, error } = await supabaseClient
-    .from('moods')
-    .select('*')
-    .eq('user_id', userData.id);
-  console.log('Moods result:', { data, error });
-};
-
-const testItemsAccess = async () => {
-  console.log('Testing items access...');
-  const { data, error } = await supabaseClient
-    .from('user_items')
-    .select('*, items(*)')
-    .eq('user_id', userData.id);
-  console.log('Items result:', { data, error });
-};
-
-// 全テーブルテスト実行関数
-const runAllTableTests = async () => {
-  console.log('=== Starting table access tests ===');
-  console.log('Current userData.id:', userData.id);
-  
-  await testTodosAccess();
-  await testMoodsAccess();
-  await testItemsAccess();
-  await testProfileAccess();
-  
-  console.log('=== Table access tests completed ===');
-};
-
-// グローバルスコープに関数を追加（ブラウザコンソールから実行可能）
-
-window.testTodosAccess = testTodosAccess;
-window.testMoodsAccess = testMoodsAccess;
-window.testItemsAccess = testItemsAccess;
-window.testProfileAccess = testProfileAccess;
-window.runAllTableTests = runAllTableTests;
 
 // ユーザーデータの保存
 async function saveUserData() {
@@ -883,9 +915,18 @@ function renderTodos() {
     todoItem.innerHTML = `
       <input type="checkbox" class="todo-check" ${todo.completed ? 'checked' : ''}>
       <span class="todo-text">${todo.text}</span>
+      <button class="todo-delete-btn" title="削除">×</button>
     `;
     
     const checkbox = todoItem.querySelector('.todo-check');
+    const deleteBtn = todoItem.querySelector('.todo-delete-btn');
+    
+    // 削除ボタンのイベントリスナー
+    deleteBtn.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      await deleteTodo(todo, todoItem);
+    });
+    
     checkbox.addEventListener('change', async () => {
       todo.completed = checkbox.checked;
       todoItem.classList.toggle('completed', todo.completed);
@@ -943,6 +984,54 @@ function renderTodos() {
     
     todoList.appendChild(todoItem);
   });
+}
+
+// タスク削除機能
+async function deleteTodo(todo, todoItem) {
+  try {
+    // 削除中のスタイルを適用
+    todoItem.classList.add('deleting');
+    
+    // スライドアウトアニメーション開始
+    todoItem.classList.add('slide-out');
+    
+    // アニメーション完了を待つ
+    await new Promise(resolve => setTimeout(resolve, 300));
+    
+    // Supabaseからタスクを削除
+    const { error } = await supabaseClient
+      .from('todos')
+      .delete()
+      .eq('id', todo.id);
+    
+    if (error) throw error;
+    
+    // ローカルのtodosリストからも削除
+    userData.todos = userData.todos.filter(t => t.id !== todo.id);
+    
+    // DOM要素を削除
+    todoItem.remove();
+    
+    // タスクリストが空になった場合の表示更新
+    const todayTodos = getTodayTodos();
+    if (todayTodos.length === 0) {
+      renderTodos();
+    }
+    
+    // ペンギンの状態を更新
+    updatePenguinState();
+    
+    console.log('タスクが削除されました:', todo.text);
+    
+  } catch (error) {
+    console.error('タスク削除エラー:', error);
+    
+    // エラー時はアニメーションを元に戻す
+    todoItem.classList.remove('slide-out', 'deleting');
+    
+    // エラーメッセージを表示（オプション）
+    alert('タスクの削除に失敗しました。もう一度お試しください。');
+  }
 }
 
 // 気分の保存

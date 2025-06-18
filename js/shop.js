@@ -465,8 +465,8 @@ const ShopManager = {
     // 既存の要素を移動
     const elementsToMove = [
       '.penguin-container',
-      '.mood-section',
       '.todo-section',
+      '.mood-section',
       '.island-status'
     ];
     
@@ -529,7 +529,7 @@ const ShopManager = {
         justify-content: space-around;
         background-color: var(--card-bg);
         border-radius: 20px;
-        padding: 0.5rem;
+        padding: 0.2rem 0.3rem;
         margin-bottom: 1rem;
         box-shadow: var(--box-shadow);
       }
@@ -537,13 +537,14 @@ const ShopManager = {
       .tab-item {
         flex: 1;
         text-align: center;
-        padding: 0.8rem;
+        padding: 0.4rem 0.2rem;
         border-radius: 15px;
         cursor: pointer;
         transition: background-color 0.3s;
         display: flex;
         flex-direction: column;
         align-items: center;
+        font-size: 0.95rem;
       }
       
       .tab-item.active {
@@ -551,12 +552,12 @@ const ShopManager = {
       }
       
       .tab-icon {
-        font-size: 1.2rem;
-        margin-bottom: 0.3rem;
+        font-size: 1rem;
+        margin-bottom: 0.1rem;
       }
       
       .tab-label {
-        font-size: 0.8rem;
+        font-size: 0.7rem;
       }
       
       /* タブコンテンツのスタイル */

@@ -9,14 +9,14 @@
   <link rel="stylesheet" href="css/style.css">
   <meta name="description" content="ペンペンと一緒にToDoと気分を記録して、毎日を楽しく過ごしましょう。かわいいペンギンのペンペンがあなたを応援します！">
   <meta name="theme-color" content="#6aa4d9">
-  <link rel="icon" href="images/55b5453a51a444569199c2ab5b5d4e4a.png">
+  <link rel="icon" href="images\Whisk_happy_home.jpg">
 </head>
 <body>
   <div class="container">
     <!-- ログイン画面 -->
     <div id="loginScreen" class="login-container">
-      <h2 class="login-title">ペンペンと一緒に</h2>
-      <img src="images/55b5453a51a444569199c2ab5b5d4e4a.png" alt="ペンペン" class="login-penguin">
+      <h2 class="login-title">ペンペン</h2>
+      <img src="images\Whisk_happy_home.jpg" alt="ペンペン" class="login-penguin">
       <button id="googleLoginBtn" class="login-btn google">Googleでログイン</button>
       <button id="emailLoginToggleBtn" class="login-btn email">メールアドレスでログイン</button>
       
@@ -68,12 +68,22 @@
       
       <!-- ペンギン表示エリア -->
       <div class="penguin-container">
-        <img id="penguinImage" class="penguin-image" src="images/55b5453a51a444569199c2ab5b5d4e4a.png" alt="ペンペン">
+        <img id="penguinImage" class="penguin-image" src="images\Whisk_normal_1.jpg" alt="ペンペン">
         <div id="penguinSpeech" class="penguin-speech">
           おはよう〜今日もいっしょにいこ〜
         </div>
       </div>
       
+      <!-- タスクリスト -->
+      <div class="todo-section">
+        <h2 class="todo-title">今日のタスク</h2>
+        <div id="todoList" class="todo-list">
+          <!-- JavaScriptでタスクが追加されます -->
+        </div>
+        <button id="addTodoBtn" class="todo-add-btn">＋ タスクを追加</button>
+      </div>
+
+            
       <!-- 気分セレクター -->
       <div class="mood-section">
         <h2 class="mood-title">今日の気分は？</h2>
@@ -95,15 +105,6 @@
             <span class="mood-label">かなしい</span>
           </button>
         </div>
-      </div>
-      
-      <!-- タスクリスト -->
-      <div class="todo-section">
-        <h2 class="todo-title">今日のタスク</h2>
-        <div id="todoList" class="todo-list">
-          <!-- JavaScriptでタスクが追加されます -->
-        </div>
-        <button id="addTodoBtn" class="todo-add-btn">＋ タスクを追加</button>
       </div>
       
       <!-- 島ステータス -->
