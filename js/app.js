@@ -544,7 +544,7 @@ function setupEventListeners() {
   console.log('Setting up event listeners');
   
   // イベントハンドラーを定義
-  eventHandlers.googleLogin = handleGoogleLogin;
+  //eventHandlers.googleLogin = handleGoogleLogin;
   eventHandlers.emailLoginToggle = () => {
     if (loginForm && emailLoginToggleBtn) {
       loginForm.classList.add('active');
@@ -591,9 +591,6 @@ function setupEventListeners() {
   };
   
   // 認証関連のイベントリスナーを追加
-  if (googleLoginBtn) {
-    googleLoginBtn.addEventListener('click', eventHandlers.googleLogin);
-  }
   if (emailLoginToggleBtn) {
     emailLoginToggleBtn.addEventListener('click', eventHandlers.emailLoginToggle);
   }
@@ -680,26 +677,6 @@ function setupEventListeners() {
   // フラグを設定
   eventListenersSetup = true;
   console.log('Event listeners setup completed');
-}
-
-// Googleログイン処理
-async function handleGoogleLogin() {
-  if (!supabaseClient) return;
-  
-  try {
-    const { error } = await supabaseClient.auth.signInWithOAuth({
-      provider: 'google',
-      options: {
-        redirectTo: CONFIG?.supabase?.redirectUrl || window.location.origin
-      }
-    });
-    
-    if (error) throw error;
-    
-  } catch (error) {
-    console.error('Googleログインエラー:', error);
-    alert('ログインに失敗しました。もう一度お試しください。');
-  }
 }
 
 // メールログイン処理
