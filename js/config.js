@@ -36,7 +36,7 @@ const emailAuthConfig = {
 const appConfig = {
   notification: {
     defaultEnabled: true,
-    icon: 'images/55b5453a51a444569199c2ab5b5d4e4a.png',
+    icon: 'images/Whisk_happy_home.jpg',
   },
   coins: {
     taskComplete: 20,
