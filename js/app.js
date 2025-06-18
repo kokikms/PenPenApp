@@ -97,9 +97,35 @@ async function initApp() {
       console.log('Auth state changed:', event, session ? 'with session' : 'no session');
     
     if (event === 'SIGNED_IN' && session) {
+      try {
+        const { data, error } = await supabaseClient.auth.getSession();
+        if (error) {
+          console.error('getSession error:', error);
+        } else {
+          console.log('accessToken:', data.session.access_token);
+        }
+      } catch (e) {
+        console.error('getSession exception:', e);
+      }
+      // getUserも試す
+      try {
+        const { data, error } = await supabaseClient.auth.getUser();
+        if (error) {
+          console.error('getUser error:', error);
+        } else {
+          console.log('user:', data.user);
+        }
+      } catch (e) {
+        console.error('getUser exception:', e);
+      }
+      const accessToken = data.session.access_token;
+      console.log('accessToken:', accessToken);
       userData.id = session.user.id;
+      console.log('Before loadUserData');
       await loadUserData();
+      console.log('After loadUserData');
       showAppScreen();
+      console.log('After showAppScreen');
     } else if (event === 'SIGNED_OUT') {
       userData = {
         id: null,
@@ -197,15 +223,23 @@ function showAppScreen() {
 
 // ユーザーデータの読み込み
 async function loadUserData() {
-  if (!supabaseClient || !userData.id) return;
-  
+  console.log('loadUserData: start');
+  if (!supabaseClient || !userData.id) {
+    console.log('loadUserData: no supabaseClient or userData.id');
+    return;
+}
   try {
+    console.log('loadUserData: before profile fetch');
     // プロフィール情報を取得
+    console.log('userData.id:', userData.id);
+    console.log('supabaseClient:', supabaseClient);
     const { data: profile, error: profileError } = await supabaseClient
       .from('profiles')
       .select('*')
       .eq('id', userData.id)
       .single();
+    console.log('profile:', profile);
+    console.log('profileError:', profileError);
     
     if (profileError && profileError.code !== 'PGRST116') {
       throw profileError;
