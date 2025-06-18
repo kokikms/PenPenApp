@@ -1039,7 +1039,16 @@ async function deleteTodo(todo, todoItem) {
     // ペンギンの状態を更新
     updatePenguinState();
     
-    console.log('タスクが削除されました:', todo.text);
+    // 削除完了メッセージ
+    const message = document.createElement('div');
+    message.className = 'delete-message';
+    message.textContent = 'タスクを削除しました';
+    document.body.appendChild(message);
+    
+    // メッセージを3秒後に消す
+    setTimeout(() => {
+      message.remove();
+    }, 3000);
     
   } catch (error) {
     console.error('タスク削除エラー:', error);
@@ -1047,7 +1056,7 @@ async function deleteTodo(todo, todoItem) {
     // エラー時はアニメーションを元に戻す
     todoItem.classList.remove('slide-out', 'deleting');
     
-    // エラーメッセージを表示（オプション）
+    // エラーメッセージを表示
     alert('タスクの削除に失敗しました。もう一度お試しください。');
   }
 }
@@ -1197,9 +1206,9 @@ function updatePenguinState() {
   
   // ペンギンの画像を設定
   if (penguinState === 'happy') {
-    penguinImage.src = 'images/Whisk_101df87b2d.jpg';
+    penguinImage.src = 'images/Whisk_happy_home.jpg';
   } else if (penguinState === 'sad') {
-    penguinImage.src = 'images/Whisk_storyboard25acca203c6c4825ad9bc5b5.png';
+    penguinImage.src = 'images/Whisk_sad_1.png';
   } else {
     penguinImage.src = 'images/Whisk_normal_1.jpg';
   }
