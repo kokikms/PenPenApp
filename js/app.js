@@ -1,4 +1,4 @@
-// ペンペンアプリのJavaScript - Supabase連携版
+// ペンペンアプリのJavaScript - Supabase連携版（デバッグ・改善版）
 
 // Supabaseクライアントの初期化
 let supabaseClient;
@@ -14,6 +14,15 @@ let userData = {
   lastVisit: new Date().toISOString(),
   streakDays: 0,
   islandLevel: 1
+};
+
+// アプリの状態管理
+let appState = {
+  isInitializing: true,
+  isLoading: false,
+  authStateProcessed: false,
+  retryCount: 0,
+  maxRetries: 3
 };
 
 // DOM要素の取得
@@ -50,83 +59,189 @@ const toggleLoginBtn = document.getElementById('toggleLoginBtn');
 const loginBtn = document.getElementById('loginBtn');
 const signupBtn = document.getElementById('signupBtn');
 
+// ローディング状態の表示
+function showLoading(message = 'Loading...') {
+  console.log(`[LOADING] ${message}`);
+  appState.isLoading = true;
+  // 必要に応じてローディングUIを表示
+}
+
+// ローディング状態の非表示
+function hideLoading() {
+  console.log('[LOADING] Hide loading');
+  appState.isLoading = false;
+  // ローディングUIを非表示
+}
+
+// エラーハンドリング
+function handleError(error, context = 'Unknown') {
+  console.error(`[ERROR] ${context}:`, error);
+  hideLoading();
+  
+  // ユーザーフレンドリーなエラーメッセージ
+  let userMessage = 'エラーが発生しました。';
+  
+  if (error.message?.includes('network') || error.message?.includes('fetch')) {
+    userMessage = 'ネットワークエラーが発生しました。インターネット接続を確認してください。';
+  } else if (error.message?.includes('auth')) {
+    userMessage = '認証エラーが発生しました。再度ログインしてください。';
+  }
+  
+  // リトライ可能なエラーの場合
+  if (appState.retryCount < appState.maxRetries && context.includes('loadUserData')) {
+    appState.retryCount++;
+    console.log(`[RETRY] Attempting retry ${appState.retryCount}/${appState.maxRetries}`);
+    setTimeout(() => {
+      loadUserData();
+    }, 1000 * appState.retryCount); // 指数バックオフ
+    return;
+  }
+  
+  alert(userMessage);
+}
+
 // Supabaseクライアントを初期化
 function initSupabase() {
   try {
+    console.log('[INIT] Initializing Supabase client...');
     supabaseClient = supabase.createClient(
       CONFIG?.supabase?.url || 'https://hzofzvlhptgwcusbnavp.supabase.co',
       CONFIG?.supabase?.anonKey || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh6b2Z6dmxocHRnd2N1c2JuYXZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTAxNzYzNjQsImV4cCI6MjA2NTc1MjM2NH0.NVfUTUJE9QK13jzi6mQQI3eTYy7z_dsrbiju86_L6tQ'
     );
-    console.log('Supabase client initialized successfully');
+    console.log('[INIT] Supabase client initialized successfully');
+    return true;
   } catch (error) {
-    console.error('Failed to initialize Supabase client:', error);
+    console.error('[INIT] Failed to initialize Supabase client:', error);
+    return false;
   }
 }
 
 // アプリの初期化
 async function initApp() {
-  // Supabaseクライアントを初期化
-  initSupabase();
+  console.log('[INIT] Starting app initialization...');
+  showLoading('アプリを初期化中...');
   
-  if (!supabaseClient) {
-    console.error('Supabase client is not available');
+  // Supabaseクライアントを初期化
+  const supabaseInitialized = initSupabase();
+  
+  if (!supabaseInitialized || !supabaseClient) {
+    console.error('[INIT] Supabase client is not available');
+    handleError(new Error('Supabase initialization failed'), 'initApp');
     showLoginScreen();
+    hideLoading();
     return;
   }
   
-  // 認証状態の変化を監視
-  supabaseClient.auth.onAuthStateChange(async (event, session) => {
-    if (event === 'SIGNED_IN' && session) {
-      userData.id = session.user.id;
-      await loadUserData();
-      showAppScreen();
-    } else if (event === 'SIGNED_OUT') {
-      userData = {
-        id: null,
-        name: 'ユーザー',
-        coins: 0,
-        todos: [],
-        moods: [],
-        items: [],
-        lastVisit: new Date().toISOString(),
-        streakDays: 0,
-        islandLevel: 1
-      };
+  try {
+    // 認証状態の変化を監視
+    console.log('[AUTH] Setting up auth state listener...');
+    supabaseClient.auth.onAuthStateChange(async (event, session) => {
+      console.log(`[AUTH] Auth state changed: ${event}`, {
+        session: session ? 'exists' : 'null',
+        user: session?.user ? session.user.id : 'null',
+        processed: appState.authStateProcessed
+      });
+      
+      // 初期化中の重複処理を防ぐ
+      if (appState.isInitializing && event === 'INITIAL_SESSION') {
+        console.log('[AUTH] Skipping INITIAL_SESSION during initialization');
+        return;
+      }
+      
+      if (event === 'SIGNED_IN' && session?.user) {
+        console.log('[AUTH] Processing SIGNED_IN event');
+        appState.authStateProcessed = true;
+        userData.id = session.user.id;
+        
+        try {
+          showLoading('ユーザーデータを読み込み中...');
+          await loadUserData();
+          console.log('[AUTH] User data loaded, showing app screen');
+          showAppScreen();
+        } catch (error) {
+          handleError(error, 'SIGNED_IN loadUserData');
+        } finally {
+          hideLoading();
+        }
+      } else if (event === 'SIGNED_OUT') {
+        console.log('[AUTH] Processing SIGNED_OUT event');
+        resetUserData();
+        showLoginScreen();
+        hideLoading();
+      }
+    });
+    
+    // 現在のセッション状態をチェック
+    console.log('[AUTH] Checking current session...');
+    const { data: { session }, error: sessionError } = await supabaseClient.auth.getSession();
+    const { data: { user }, error: userError } = await supabaseClient.auth.getUser();
+    
+    console.log('[AUTH] Session check results:', {
+      session: session ? 'exists' : 'null',
+      user: user ? 'exists' : 'null',
+      sessionError,
+      userError
+    });
+    
+    // セッションまたはユーザー情報が存在する場合
+    if ((session && session.user) || user) {
+      const currentUser = session?.user || user;
+      console.log('[AUTH] User is logged in:', currentUser.id);
+      userData.id = currentUser.id;
+      
+      try {
+        showLoading('ユーザーデータを読み込み中...');
+        await loadUserData();
+        console.log('[AUTH] User data loaded successfully, showing app screen');
+        showAppScreen();
+      } catch (error) {
+        console.error('[AUTH] Failed to load user data:', error);
+        handleError(error, 'initApp loadUserData');
+        // データ読み込みに失敗した場合でもアプリ画面を表示
+        showAppScreen();
+      }
+    } else {
+      console.log('[AUTH] User is not logged in, showing login screen');
       showLoginScreen();
     }
-  });
-  
-  // ログイン状態をチェック（セッションとユーザー情報の両方を確認）
-  const { data: { session }, error: sessionError } = await supabaseClient.auth.getSession();
-  const { data: { user }, error: userError } = await supabaseClient.auth.getUser();
-  
-  console.log('Login status check:');
-  console.log('Session:', session);
-  console.log('User:', user);
-  console.log('Session error:', sessionError);
-  console.log('User error:', userError);
-  
-  if ((session && session.user) || user) {
-    // ログイン済みの場合（セッションまたはユーザー情報が存在）
-    const currentUser = session?.user || user;
-    userData.id = currentUser.id;
-    console.log('User is logged in, loading user data and showing app screen');
-    await loadUserData();
-    showAppScreen();
-  } else {
-    // 未ログインの場合
-    console.log('User is not logged in, showing login screen');
+    
+  } catch (error) {
+    console.error('[INIT] App initialization failed:', error);
+    handleError(error, 'initApp');
     showLoginScreen();
+  } finally {
+    appState.isInitializing = false;
+    hideLoading();
+    console.log('[INIT] App initialization completed');
   }
   
   // イベントリスナーの設定
   setupEventListeners();
 }
 
+// ユーザーデータのリセット
+function resetUserData() {
+  console.log('[DATA] Resetting user data');
+  userData = {
+    id: null,
+    name: 'ユーザー',
+    coins: 0,
+    todos: [],
+    moods: [],
+    items: [],
+    lastVisit: new Date().toISOString(),
+    streakDays: 0,
+    islandLevel: 1
+  };
+  appState.authStateProcessed = false;
+  appState.retryCount = 0;
+}
+
 // ログイン画面の表示
 function showLoginScreen() {
-  loginScreen.style.display = 'block';
-  appScreen.style.display = 'none';
+  console.log('[UI] Showing login screen');
+  if (loginScreen) loginScreen.style.display = 'block';
+  if (appScreen) appScreen.style.display = 'none';
   
   // メールログインボタンを再表示
   if (emailLoginToggleBtn) {
@@ -146,23 +261,34 @@ function showLoginScreen() {
 
 // アプリ画面の表示
 function showAppScreen() {
-  loginScreen.style.display = 'none';
-  appScreen.style.display = 'block';
+  console.log('[UI] Showing app screen');
+  if (loginScreen) loginScreen.style.display = 'none';
+  if (appScreen) appScreen.style.display = 'block';
   
   // データの表示
   updatePenguinState();
   renderTodos();
   updateCoinsDisplay();
   updateIslandLevel();
-  checkLastVisit();
+  
+  // 最終訪問チェック（非同期で実行）
+  checkLastVisit().catch(error => {
+    console.error('[UI] Error in checkLastVisit:', error);
+  });
 }
 
-// ユーザーデータの読み込み
+// ユーザーデータの読み込み（改善版）
 async function loadUserData() {
-  if (!supabaseClient || !userData.id) return;
+  if (!supabaseClient || !userData.id) {
+    console.warn('[DATA] Cannot load user data: missing client or user ID');
+    return;
+  }
+  
+  console.log('[DATA] Loading user data for user:', userData.id);
   
   try {
     // プロフィール情報を取得
+    console.log('[DATA] Fetching profile...');
     const { data: profile, error: profileError } = await supabaseClient
       .from('profiles')
       .select('*')
@@ -170,69 +296,98 @@ async function loadUserData() {
       .single();
     
     if (profileError && profileError.code !== 'PGRST116') {
+      console.error('[DATA] Profile fetch error:', profileError);
       throw profileError;
     }
     
     if (profile) {
+      console.log('[DATA] Profile loaded:', profile);
       userData.name = profile.display_name || 'ユーザー';
       userData.coins = profile.coins || 0;
       userData.streakDays = profile.streak_days || 0;
       userData.lastVisit = profile.last_visit || new Date().toISOString();
       userData.islandLevel = profile.level || 1;
+    } else {
+      console.log('[DATA] No profile found, using defaults');
     }
     
     // ToDosを取得
+    console.log('[DATA] Fetching todos...');
     const { data: todos, error: todosError } = await supabaseClient
       .from('todos')
       .select('*')
       .eq('user_id', userData.id)
       .order('created_at', { ascending: false });
     
-    if (todosError) throw todosError;
-    
-    if (todos) {
-      userData.todos = todos;
+    if (todosError) {
+      console.error('[DATA] Todos fetch error:', todosError);
+      throw todosError;
     }
     
+    userData.todos = todos || [];
+    console.log('[DATA] Todos loaded:', userData.todos.length);
+    
     // Moodsを取得
+    console.log('[DATA] Fetching moods...');
     const { data: moods, error: moodsError } = await supabaseClient
       .from('moods')
       .select('*')
       .eq('user_id', userData.id)
       .order('created_at', { ascending: false });
     
-    if (moodsError) throw moodsError;
-    
-    if (moods) {
-      userData.moods = moods;
+    if (moodsError) {
+      console.error('[DATA] Moods fetch error:', moodsError);
+      throw moodsError;
     }
     
+    userData.moods = moods || [];
+    console.log('[DATA] Moods loaded:', userData.moods.length);
+    
     // アイテムを取得
+    console.log('[DATA] Fetching items...');
     const { data: items, error: itemsError } = await supabaseClient
       .from('user_items')
       .select('*, items(*)')
       .eq('user_id', userData.id);
     
-    if (itemsError) throw itemsError;
-    
-    if (items) {
-      userData.items = items;
+    if (itemsError) {
+      console.error('[DATA] Items fetch error:', itemsError);
+      throw itemsError;
     }
     
+    userData.items = items || [];
+    console.log('[DATA] Items loaded:', userData.items.length);
+    
+    console.log('[DATA] All user data loaded successfully');
+    appState.retryCount = 0; // 成功時はリトライカウントをリセット
+    
   } catch (error) {
-    console.error('データの読み込みエラー:', error);
+    console.error('[DATA] Error loading user data:', error);
+    
     // エラー時はローカルストレージのデータがあれば使用
     const saved = localStorage.getItem('penpenUserData');
     if (saved) {
-      const localData = JSON.parse(saved);
-      userData = { ...userData, ...localData, id: userData.id };
+      try {
+        const localData = JSON.parse(saved);
+        userData = { ...userData, ...localData, id: userData.id };
+        console.log('[DATA] Fallback to local storage data');
+      } catch (parseError) {
+        console.error('[DATA] Failed to parse local storage data:', parseError);
+      }
     }
+    
+    throw error; // エラーを再スローして上位でハンドリング
   }
 }
 
 // ユーザーデータの保存
 async function saveUserData() {
-  if (!supabaseClient || !userData.id) return;
+  if (!supabaseClient || !userData.id) {
+    console.warn('[DATA] Cannot save user data: missing client or user ID');
+    return;
+  }
+  
+  console.log('[DATA] Saving user data...');
   
   try {
     // プロフィール情報を更新
@@ -248,7 +403,10 @@ async function saveUserData() {
         updated_at: new Date().toISOString()
       });
     
-    if (profileError) throw profileError;
+    if (profileError) {
+      console.error('[DATA] Profile save error:', profileError);
+      throw profileError;
+    }
     
     // バックアップとしてローカルストレージにも保存
     localStorage.setItem('penpenUserData', JSON.stringify({
@@ -259,8 +417,11 @@ async function saveUserData() {
       islandLevel: userData.islandLevel
     }));
     
+    console.log('[DATA] User data saved successfully');
+    
   } catch (error) {
-    console.error('データの保存エラー:', error);
+    console.error('[DATA] Error saving user data:', error);
+    handleError(error, 'saveUserData');
   }
 }
 
@@ -270,31 +431,32 @@ let eventListenersSetup = false;
 function setupEventListeners() {
   // 既にセットアップ済みの場合は何もしない
   if (eventListenersSetup) {
-    console.log('Event listeners already setup, skipping...');
+    console.log('[EVENT] Event listeners already setup, skipping...');
     return;
   }
   
-  console.log('Setting up event listeners...');
+  console.log('[EVENT] Setting up event listeners...');
   eventListenersSetup = true;
+  
   // 認証関連
   googleLoginBtn?.addEventListener('click', handleGoogleLogin);
   emailLoginToggleBtn?.addEventListener('click', () => {
-    console.log('Email login button clicked');
+    console.log('[EVENT] Email login button clicked');
     console.log('loginForm element:', loginForm);
     console.log('emailLoginToggleBtn element:', emailLoginToggleBtn);
     
     if (loginForm) {
       loginForm.classList.add('active');
-      console.log('Added active class to loginForm');
+      console.log('[EVENT] Added active class to loginForm');
     } else {
-      console.error('loginForm element not found');
+      console.error('[EVENT] loginForm element not found');
     }
     
     if (emailLoginToggleBtn) {
       emailLoginToggleBtn.style.display = 'none';
-      console.log('Hidden emailLoginToggleBtn');
+      console.log('[EVENT] Hidden emailLoginToggleBtn');
     } else {
-      console.error('emailLoginToggleBtn element not found');
+      console.error('[EVENT] emailLoginToggleBtn element not found');
     }
   });
   
@@ -356,11 +518,19 @@ function setupEventListeners() {
       userMenu.classList.remove('active');
     }
   });
+  
+  console.log('[EVENT] Event listeners setup completed');
 }
 
 // Googleログイン処理
 async function handleGoogleLogin() {
-  if (!supabaseClient) return;
+  if (!supabaseClient) {
+    console.error('[AUTH] Supabase client not available for Google login');
+    return;
+  }
+  
+  console.log('[AUTH] Starting Google login...');
+  showLoading('Googleでログイン中...');
   
   try {
     const { error } = await supabaseClient.auth.signInWithOAuth({
@@ -372,15 +542,22 @@ async function handleGoogleLogin() {
     
     if (error) throw error;
     
+    console.log('[AUTH] Google login initiated');
+    
   } catch (error) {
-    console.error('Googleログインエラー:', error);
-    alert('ログインに失敗しました。もう一度お試しください。');
+    console.error('[AUTH] Google login error:', error);
+    handleError(error, 'handleGoogleLogin');
+  } finally {
+    hideLoading();
   }
 }
 
 // メールログイン処理
 async function handleEmailLogin() {
-  if (!supabaseClient) return;
+  if (!supabaseClient) {
+    console.error('[AUTH] Supabase client not available for email login');
+    return;
+  }
   
   const email = document.getElementById('email').value;
   const password = document.getElementById('password').value;
@@ -390,6 +567,9 @@ async function handleEmailLogin() {
     return;
   }
   
+  console.log('[AUTH] Starting email login for:', email);
+  showLoading('ログイン中...');
+  
   try {
     const { data, error } = await supabaseClient.auth.signInWithPassword({
       email,
@@ -398,21 +578,28 @@ async function handleEmailLogin() {
     
     if (error) throw error;
     
+    console.log('[AUTH] Email login successful:', data.user?.id);
+    
     if (data.user) {
       userData.id = data.user.id;
-      await loadUserData();
-      showAppScreen();
+      // 認証状態変更のイベントハンドラーで処理されるため、ここでは何もしない
     }
     
   } catch (error) {
-    console.error('メールログインエラー:', error);
+    console.error('[AUTH] Email login error:', error);
+    handleError(error, 'handleEmailLogin');
     alert('ログインに失敗しました。メールアドレスとパスワードを確認してください。');
+  } finally {
+    hideLoading();
   }
 }
 
 // サインアップ処理
 async function handleSignup() {
-  if (!supabaseClient) return;
+  if (!supabaseClient) {
+    console.error('[AUTH] Supabase client not available for signup');
+    return;
+  }
   
   const email = document.getElementById('signupEmail').value;
   const password = document.getElementById('signupPassword').value;
@@ -430,6 +617,9 @@ async function handleSignup() {
     return;
   }
   
+  console.log('[AUTH] Starting signup for:', email);
+  showLoading('アカウント作成中...');
+  
   try {
     const { data, error } = await supabaseClient.auth.signUp({
       email,
@@ -444,12 +634,13 @@ async function handleSignup() {
     
     if (error) throw error;
     
+    console.log('[AUTH] Signup successful:', data.user?.id);
+    
     if (data.user) {
       if (data.session) {
         // 確認なしですぐにログイン
         userData.id = data.user.id;
-        await loadUserData();
-        showAppScreen();
+        // 認証状態変更のイベントハンドラーで処理される
       } else {
         // メール確認が必要
         alert('アカウントが作成されました！メールを確認してください。');
@@ -459,36 +650,38 @@ async function handleSignup() {
     }
     
   } catch (error) {
-    console.error('サインアップエラー:', error);
+    console.error('[AUTH] Signup error:', error);
+    handleError(error, 'handleSignup');
     alert('アカウント作成に失敗しました。もう一度お試しください。');
+  } finally {
+    hideLoading();
   }
 }
 
 // ログアウト処理
 async function handleLogout() {
-  if (!supabaseClient) return;
+  if (!supabaseClient) {
+    console.error('[AUTH] Supabase client not available for logout');
+    return;
+  }
+  
+  console.log('[AUTH] Starting logout...');
+  showLoading('ログアウト中...');
   
   try {
     const { error } = await supabaseClient.auth.signOut();
     
     if (error) throw error;
     
-    userData = {
-      id: null,
-      name: 'ユーザー',
-      coins: 0,
-      todos: [],
-      moods: [],
-      items: [],
-      lastVisit: new Date().toISOString(),
-      streakDays: 0,
-      islandLevel: 1
-    };
-    
+    console.log('[AUTH] Logout successful');
+    resetUserData();
     showLoginScreen();
     
   } catch (error) {
-    console.error('ログアウトエラー:', error);
+    console.error('[AUTH] Logout error:', error);
+    handleError(error, 'handleLogout');
+  } finally {
+    hideLoading();
   }
 }
 
@@ -916,6 +1109,21 @@ function requestNotificationPermission() {
 
 // ページ読み込み時に初期化
 document.addEventListener('DOMContentLoaded', () => {
+  console.log('[INIT] DOM content loaded, starting initialization...');
   initApp();
   requestNotificationPermission();
+});
+
+// ページの可視性変更時の処理（デバッグ用）
+document.addEventListener('visibilitychange', () => {
+  console.log('[DEBUG] Page visibility changed:', document.visibilityState);
+});
+
+// ウィンドウフォーカス時の処理（デバッグ用）
+window.addEventListener('focus', () => {
+  console.log('[DEBUG] Window focused');
+});
+
+window.addEventListener('blur', () => {
+  console.log('[DEBUG] Window blurred');
 });
