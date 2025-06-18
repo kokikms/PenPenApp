@@ -53,6 +53,11 @@ const signupBtn = document.getElementById('signupBtn');
 // 気分ボタン・ToDoリストの親要素取得
 const moodContainer = document.getElementById('moodContainer'); // 必要に応じてHTML側も確認
 
+// 設定モーダル関連の要素取得
+const settingsModal = document.getElementById('settingsModal');
+const logoutModalBtn = document.getElementById('logoutModalBtn');
+const closeSettingsModalBtn = document.getElementById('closeSettingsModalBtn');
+
 // Supabaseクライアントを初期化
 function initSupabase() {
   try {
@@ -562,8 +567,8 @@ function setupEventListeners() {
   eventHandlers.signup = handleSignup;
   eventHandlers.logout = handleLogout;
   eventHandlers.settings = () => {
-    if (userMenu) {
-      userMenu.classList.toggle('active');
+    if (settingsModal) {
+      settingsModal.classList.add('active');
     }
   };
   eventHandlers.islandStatus = () => {
@@ -658,6 +663,19 @@ function setupEventListeners() {
   
   // ドキュメントクリックイベントを追加
   document.addEventListener('click', eventHandlers.documentClick);
+  
+  // 設定モーダルのイベント
+  if (logoutModalBtn) {
+    logoutModalBtn.addEventListener('click', async () => {
+      if (settingsModal) settingsModal.classList.remove('active');
+      await handleLogout();
+    });
+  }
+  if (closeSettingsModalBtn) {
+    closeSettingsModalBtn.addEventListener('click', () => {
+      if (settingsModal) settingsModal.classList.remove('active');
+    });
+  }
   
   // フラグを設定
   eventListenersSetup = true;
@@ -888,7 +906,7 @@ function scheduleNotification(taskText, timeString) {
     if (Notification.permission === 'granted') {
       new Notification('ペンペンからのお知らせ', {
         body: `${taskText}の時間だよ〜！いっしょにがんばろっ！`,
-        icon: CONFIG?.app?.notification?.icon || 'images/55b5453a51a444569199c2ab5b5d4e4a.png'
+        icon: CONFIG?.app?.notification?.icon || 'images/Whisk_happy_home.jpg'
       });
     }
   }, timeUntilNotification);
@@ -1183,7 +1201,7 @@ function updatePenguinState() {
   } else if (penguinState === 'sad') {
     penguinImage.src = 'images/Whisk_storyboard25acca203c6c4825ad9bc5b5.png';
   } else {
-    penguinImage.src = 'images/55b5453a51a444569199c2ab5b5d4e4a.png';
+    penguinImage.src = 'images/Whisk_normal_1.jpg';
   }
   
   penguinSpeech.textContent = message;
@@ -1295,6 +1313,29 @@ document.addEventListener('DOMContentLoaded', () => {
     if (appScreen) {
       appScreen.style.display = 'none';
     }
+  }
+
+  // 設定ボタン・モーダルのイベント登録
+  const settingsBtn = document.getElementById('settingsBtn');
+  const settingsModal = document.getElementById('settingsModal');
+  const logoutModalBtn = document.getElementById('logoutModalBtn');
+  const closeSettingsModalBtn = document.getElementById('closeSettingsModalBtn');
+
+  if (settingsBtn && settingsModal) {
+    settingsBtn.addEventListener('click', () => {
+      settingsModal.classList.add('active');
+    });
+  }
+  if (logoutModalBtn && settingsModal) {
+    logoutModalBtn.addEventListener('click', async () => {
+      settingsModal.classList.remove('active');
+      await handleLogout();
+    });
+  }
+  if (closeSettingsModalBtn && settingsModal) {
+    closeSettingsModalBtn.addEventListener('click', () => {
+      settingsModal.classList.remove('active');
+    });
   }
 });
 

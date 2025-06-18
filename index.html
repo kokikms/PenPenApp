@@ -9,14 +9,14 @@
   <link rel="stylesheet" href="css/style.css">
   <meta name="description" content="ペンペンと一緒にToDoと気分を記録して、毎日を楽しく過ごしましょう。かわいいペンギンのペンペンがあなたを応援します！">
   <meta name="theme-color" content="#6aa4d9">
-  <link rel="icon" href="images\Whisk_happy_home.jpg">
+  <link rel="icon" href="images/Whisk_happy_home.jpg">
 </head>
 <body>
   <div class="container">
     <!-- ログイン画面 -->
     <div id="loginScreen" class="login-container">
       <h2 class="login-title">ペンペン</h2>
-      <img src="images\Whisk_happy_home.jpg" alt="ペンペン" class="login-penguin">
+      <img src="images/Whisk_happy_home.jpg" alt="ペンペン" class="login-penguin">
       <button id="googleLoginBtn" class="login-btn google">Googleでログイン</button>
       <button id="emailLoginToggleBtn" class="login-btn email">メールアドレスでログイン</button>
       
@@ -55,9 +55,9 @@
     
     <!-- メインアプリ画面 (ログイン後に表示) -->
     <div id="appScreen" style="display: none;">
-      <header>
-        <h1>ペンペンと一緒に</h1>
-        <button id="settingsBtn" class="settings-btn">
+      <header style="display:flex;align-items:center;justify-content:space-between;position:relative;">
+        <h1 style="margin:0;">ペンペンと一緒に</h1>
+        <button id="settingsBtn" class="settings-btn" style="position:static;top:auto;right:auto;">
           <span class="material-symbols-rounded">settings</span>
         </button>
         <div id="userMenu" class="user-menu">
@@ -65,10 +65,20 @@
           <div id="logoutMenuItem" class="user-menu-item">ログアウト</div>
         </div>
       </header>
+      <!-- 設定モーダル -->
+      <div id="settingsModal" class="modal">
+        <div class="modal-content" style="max-width:300px;">
+          <h3 class="modal-title">設定</h3>
+          <div class="modal-buttons" style="flex-direction:column;gap:1rem;">
+            <button id="logoutModalBtn" class="modal-btn save" style="width:100%;">ログアウト</button>
+            <button id="closeSettingsModalBtn" class="modal-btn cancel" style="width:100%;">閉じる</button>
+          </div>
+        </div>
+      </div>
       
       <!-- ペンギン表示エリア -->
       <div class="penguin-container">
-        <img id="penguinImage" class="penguin-image" src="images\Whisk_normal_1.jpg" alt="ペンペン">
+        <img id="penguinImage" class="penguin-image" src="images/Whisk_normal_1.jpg" alt="ペンペン">
         <div id="penguinSpeech" class="penguin-speech">
           おはよう〜今日もいっしょにいこ〜
         </div>
@@ -122,7 +132,7 @@
       <!-- 島の画面 (クリックで表示) -->
       <div id="islandContainer" class="island-container">
         <div class="island-scene">
-          <img id="islandPenguin" class="island-penguin walking" src="images/55b5453a51a444569199c2ab5b5d4e4a.png" alt="ペンペン">
+          <img id="islandPenguin" class="island-penguin walking" src="images/Whisk_normal_1.jpg" alt="ペンペン">
         </div>
         <div class="island-shop">
           <!-- JavaScriptでショップアイテムが追加されます -->
