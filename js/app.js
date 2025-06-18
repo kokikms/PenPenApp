@@ -56,13 +56,37 @@ const moodContainer = document.getElementById('moodContainer'); // 必要に応�
 // Supabaseクライアントを初期化
 function initSupabase() {
   try {
-    supabaseClient = supabase.createClient(
-      CONFIG?.supabase?.url || 'https://hzofzvlhptgwcusbnavp.supabase.co',
-      CONFIG?.supabase?.anonKey || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh6b2Z6dmxocHRnd2N1c2JuYXZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTAxNzYzNjQsImV4cCI6MjA2NTc1MjM2NH0.NVfUTUJE9QK13jzi6mQQI3eTYy7z_dsrbiju86_L6tQ'
-    );
+    // デバッグ: CONFIG オブジェクトの確認
+    console.log('CONFIG object:', CONFIG);
+    console.log('CONFIG.supabase:', CONFIG?.supabase);
+    
+    // デバッグ: 使用される URL と Key の確認
+    const url = CONFIG?.supabase?.url || 'https://hzofzvlhptgwcusbnavp.supabase.co';
+    const anonKey = CONFIG?.supabase?.anonKey || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh6b2Z6dmxocHRnd2N1c2JuYXZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTAxNzYzNjQsImV4cCI6MjA2NTc1MjM2NH0.NVfUTUJE9QK13jzi6mQQI3eTYy7z_dsrbiju86_L6tQ';
+    
+    console.log('Using Supabase URL:', url);
+    console.log('Using Supabase anonKey:', anonKey ? anonKey.substring(0, 20) + '...' : 'undefined');
+    
+    // デバッグ: supabase ライブラリの確認
+    console.log('supabase library available:', typeof supabase);
+    console.log('supabase.createClient available:', typeof supabase?.createClient);
+    
+    supabaseClient = supabase.createClient(url, anonKey);
+    
+    // デバッグ: 作成されたクライアントの確認
+    console.log('Supabase client created:', supabaseClient);
+    console.log('Supabase client type:', typeof supabaseClient);
+    console.log('Supabase client auth:', supabaseClient?.auth);
+    console.log('Supabase client from:', supabaseClient?.from);
+    
     console.log('Supabase client initialized successfully');
   } catch (error) {
     console.error('Failed to initialize Supabase client:', error);
+    console.error('Error details:', {
+      message: error.message,
+      stack: error.stack,
+      name: error.name
+    });
   }
 }
 
@@ -89,56 +113,46 @@ async function initApp() {
       return;
     }
     
+    // デバッグ用：テーブルアクセステストを自動実行
+    console.log('Running automatic table access tests...');
+    setTimeout(() => {
+      if (typeof runAllTableTests === 'function') {
+        runAllTableTests();
+      } else {
+        console.warn('runAllTableTests function not found');
+      }
+    }, 1000); // Supabase初期化後1秒待ってから実行
+    
     // イベントリスナーを最初に一度だけ設定
     setupEventListeners();
     
     // 認証状態の変化を監視
     supabaseClient.auth.onAuthStateChange(async (event, session) => {
-      console.log('Auth state changed:', event, session ? 'with session' : 'no session');
+      console.log('Auth state changed:', event);
     
-    if (event === 'SIGNED_IN' && session) {
-      try {
-        const { data, error } = await supabaseClient.auth.getSession();
-        if (error) {
-          console.error('getSession error:', error);
-        } else {
-          console.log('accessToken:', data.session.access_token);
+      if (event === 'SIGNED_IN' && session?.user) {
+        try {
+          userData.id = session.user.id;
+          await loadUserData();
+          showAppScreen();
+        } catch (error) {
+          console.error('Authentication error:', error);
+          // エラー時はログイン画面に戻す
+          showLoginScreen();
         }
-      } catch (e) {
-        console.error('getSession exception:', e);
-      }
-      // getUserも試す
-      try {
-        const { data, error } = await supabaseClient.auth.getUser();
-        if (error) {
-          console.error('getUser error:', error);
-        } else {
-          console.log('user:', data.user);
-        }
-      } catch (e) {
-        console.error('getUser exception:', e);
-      }
-      const accessToken = data.session.access_token;
-      console.log('accessToken:', accessToken);
-      userData.id = session.user.id;
-      console.log('Before loadUserData');
-      await loadUserData();
-      console.log('After loadUserData');
-      showAppScreen();
-      console.log('After showAppScreen');
-    } else if (event === 'SIGNED_OUT') {
-      userData = {
-        id: null,
-        name: 'ユーザー',
-        coins: 0,
-        todos: [],
-        moods: [],
-        items: [],
-        lastVisit: new Date().toISOString(),
-        streakDays: 0,
-        islandLevel: 1
-      };
-      showLoginScreen();
+      } else if (event === 'SIGNED_OUT') {
+        userData = {
+          id: null,
+          name: 'ユーザー',
+          coins: 0,
+          todos: [],
+          moods: [],
+          items: [],
+          lastVisit: new Date().toISOString(),
+          streakDays: 0,
+          islandLevel: 1
+        };
+        showLoginScreen();
     }
   });
   
@@ -167,6 +181,9 @@ async function initApp() {
   
   console.log('App initialization completed');
   
+  // 初期化完了を示すクラスを追加（ローディング画面を非表示にする）
+  document.body.classList.add('app-initialized');
+  
   } catch (error) {
     console.error('Error during app initialization:', error);
     // フォールバック: ログイン画面を表示
@@ -176,6 +193,8 @@ async function initApp() {
     if (appScreen) {
       appScreen.style.display = 'none';
     }
+    // エラー時でも初期化完了を示すクラスを追加
+    document.body.classList.add('app-initialized');
   }
 }
 
@@ -230,14 +249,26 @@ async function loadUserData() {
 }
   try {
     console.log('loadUserData: before profile fetch');
-    // プロフィール情報を取得
+    // プロフィール情報を取得（タイムアウト付き）
     console.log('userData.id:', userData.id);
     console.log('supabaseClient:', supabaseClient);
-    const { data: profile, error: profileError } = await supabaseClient
+    
+    // タイムアウト処理を追加
+    const profilePromise = supabaseClient
       .from('profiles')
       .select('*')
       .eq('id', userData.id)
       .single();
+    
+    const timeoutPromise = new Promise((_, reject) => 
+      setTimeout(() => reject(new Error('Profile fetch timeout after 10 seconds')), 10000)
+    );
+    
+    const { data: profile, error: profileError } = await Promise.race([
+      profilePromise,
+      timeoutPromise
+    ]);
+    
     console.log('profile:', profile);
     console.log('profileError:', profileError);
     
@@ -301,6 +332,64 @@ async function loadUserData() {
     }
   }
 }
+
+// デバッグ用：各テーブルへの個別アクセステスト
+const testProfileAccess = async () => {
+  console.log('Testing profile access...');
+  const { data, error } = await supabaseClient
+    .from('profiles')
+    .select('*')
+    .eq('id', userData.id);
+  console.log('Profile result:', { data, error });
+};
+
+const testTodosAccess = async () => {
+  console.log('Testing todos access...');
+  const { data, error } = await supabaseClient
+    .from('todos')
+    .select('*')
+    .eq('user_id', userData.id);
+  console.log('Todos result:', { data, error });
+};
+
+const testMoodsAccess = async () => {
+  console.log('Testing moods access...');
+  const { data, error } = await supabaseClient
+    .from('moods')
+    .select('*')
+    .eq('user_id', userData.id);
+  console.log('Moods result:', { data, error });
+};
+
+const testItemsAccess = async () => {
+  console.log('Testing items access...');
+  const { data, error } = await supabaseClient
+    .from('user_items')
+    .select('*, items(*)')
+    .eq('user_id', userData.id);
+  console.log('Items result:', { data, error });
+};
+
+// 全テーブルテスト実行関数
+const runAllTableTests = async () => {
+  console.log('=== Starting table access tests ===');
+  console.log('Current userData.id:', userData.id);
+  
+  await testTodosAccess();
+  await testMoodsAccess();
+  await testItemsAccess();
+  await testProfileAccess();
+  
+  console.log('=== Table access tests completed ===');
+};
+
+// グローバルスコープに関数を追加（ブラウザコンソールから実行可能）
+
+window.testTodosAccess = testTodosAccess;
+window.testMoodsAccess = testMoodsAccess;
+window.testItemsAccess = testItemsAccess;
+window.testProfileAccess = testProfileAccess;
+window.runAllTableTests = runAllTableTests;
 
 // ユーザーデータの保存
 async function saveUserData() {
