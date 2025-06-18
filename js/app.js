@@ -334,7 +334,7 @@ async function loadUserData() {
       .single();
     
     const timeoutPromise = new Promise((_, reject) => 
-      setTimeout(() => reject(new Error('Profile fetch timeout after 10 seconds')), 10000)
+      setTimeout(() => reject(new Error('Profile fetch timeout after 10 seconds')), 3000)
     );
     
     const { data: profile, error: profileError } = await Promise.race([
