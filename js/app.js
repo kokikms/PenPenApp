@@ -1248,26 +1248,19 @@ function renderTodos() {
     todoItem.innerHTML = `
       <input type="checkbox" class="todo-check" ${todo.completed ? 'checked' : ''}>
       <span class="todo-text">${todo.text}</span>
+      <button class="todo-edit-btn" title="編集">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#888" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 21v-3.75a2 2 0 0 1 .586-1.414l11.314-11.314a2 2 0 0 1 2.828 0l1.336 1.336a2 2 0 0 1 0 2.828L7.75 20.414A2 2 0 0 1 6.336 21H3z"/>
+        </svg>
+      </button>
       <button class="todo-delete-btn" title="削除">×</button>
     `;
-    const textSpan = todoItem.querySelector('.todo-text');
-    // --- 編集機能：PCはクリック、スマホはダブルタップで編集モーダル ---
-    if (isTouchDevice()) {
-      let lastTap = 0;
-      textSpan.addEventListener('touchend', (e) => {
-        const now = Date.now();
-        if (now - lastTap < 400) {
-          e.stopPropagation();
-          showEditTodoModal(todo);
-        }
-        lastTap = now;
-      });
-    } else {
-      textSpan.addEventListener('click', (e) => {
-        e.stopPropagation();
-        showEditTodoModal(todo);
-      });
-    }
+    // 編集ボタンで編集モーダルを開く
+    const editBtn = todoItem.querySelector('.todo-edit-btn');
+    editBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      showEditTodoModal(todo);
+    });
     const checkbox = todoItem.querySelector('.todo-check');
     const deleteBtn = todoItem.querySelector('.todo-delete-btn');
     deleteBtn.addEventListener('click', async (e) => {

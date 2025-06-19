@@ -772,3 +772,50 @@ input:checked + .toggle-slider:before {
   90% { opacity: 1; transform: translate(-50%, 0); }
   100% { opacity: 0; transform: translate(-50%, -20px); }
 }
+
+/* 柔らかい通知バナー */
+.soft-notification {
+  position: fixed;
+  top: 40px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #fffbe7;
+  color: #333;
+  border-radius: 16px;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.12);
+  padding: 1rem 2rem;
+  font-size: 1.1rem;
+  z-index: 9999;
+  transition: opacity 1s;
+}
+.soft-notification.fade-out {
+  opacity: 0;
+}
+.soft-notification.success { background: #e0f7fa; color: #00796b; }
+.soft-notification.warning { background: #fff3e0; color: #e65100; }
+
+.todo-edit-btn {
+  background: #fff;
+  color: #888;
+  border: none;
+  border-radius: 6px;
+  width: 2.2em;
+  height: 2.2em;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2em;
+  margin-left: 0.5em;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+  padding: 0;
+}
+.todo-edit-btn:hover {
+  background: #f0f0f0;
+  color: #555;
+}
+.todo-edit-btn svg {
+  width: 1.2em;
+  height: 1.2em;
+  display: block;
+}
