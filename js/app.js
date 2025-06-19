@@ -65,6 +65,8 @@ const saveEditTodoBtn = document.getElementById('saveEditTodoBtn');
 const cancelEditTodoBtn = document.getElementById('cancelEditTodoBtn');
 let editingTodo = null;
 
+let ignoreNextEditClick = false;
+
 // Supabaseクライアントを初期化
 function initSupabase() {
   try {
@@ -1239,6 +1241,18 @@ function renderTodos() {
     todoList.innerHTML = '<div class="todo-item">今日のタスクはまだないよ〜</div>';
     return;
   }
+  // ドロップインジケーターを管理
+  let dropIndicator = null;
+  let dropIndicatorIndex = null;
+  let dropIndicatorParent = null;
+  function removeDropIndicator() {
+    if (dropIndicator && dropIndicator.parentNode) {
+      dropIndicator.parentNode.removeChild(dropIndicator);
+      dropIndicator = null;
+      dropIndicatorIndex = null;
+      dropIndicatorParent = null;
+    }
+  }
   todayTodos.forEach((todo, idx) => {
     const todoItem = document.createElement('div');
     todoItem.className = `todo-item ${todo.completed ? 'completed' : ''}`;
@@ -1257,7 +1271,17 @@ function renderTodos() {
     `;
     // 編集ボタンで編集モーダルを開く
     const editBtn = todoItem.querySelector('.todo-edit-btn');
+    editBtn.addEventListener('touchend', (e) => {
+      e.stopPropagation();
+      e.preventDefault();
+      ignoreNextEditClick = true;
+      showEditTodoModal(todo);
+    });
     editBtn.addEventListener('click', (e) => {
+      if (ignoreNextEditClick) {
+        ignoreNextEditClick = false;
+        return;
+      }
       e.stopPropagation();
       showEditTodoModal(todo);
     });
@@ -1309,20 +1333,29 @@ function renderTodos() {
       e.dataTransfer.effectAllowed = 'move';
       e.dataTransfer.setData('text/plain', idx);
       todoItem.classList.add('dragging');
+      e.dataTransfer.setDragImage(todoItem, todoItem.offsetWidth / 2, todoItem.offsetHeight / 2);
     });
     todoItem.addEventListener('dragend', () => {
       todoItem.classList.remove('dragging');
+      removeDropIndicator();
     });
     todoItem.addEventListener('dragover', (e) => {
       e.preventDefault();
-      todoItem.classList.add('drag-over');
+      // すでに同じ親・同じ位置にインジケーターがある場合は何もしない
+      if (dropIndicatorIndex === idx && dropIndicatorParent === todoItem.parentNode) return;
+      removeDropIndicator();
+      dropIndicator = document.createElement('div');
+      dropIndicator.className = 'drop-indicator';
+      todoItem.parentNode.insertBefore(dropIndicator, todoItem);
+      dropIndicatorIndex = idx;
+      dropIndicatorParent = todoItem.parentNode;
     });
-    todoItem.addEventListener('dragleave', () => {
-      todoItem.classList.remove('drag-over');
+    todoItem.addEventListener('dragleave', (e) => {
+      removeDropIndicator();
     });
     todoItem.addEventListener('drop', async (e) => {
       e.preventDefault();
-      todoItem.classList.remove('drag-over');
+      removeDropIndicator();
       const fromIdx = parseInt(e.dataTransfer.getData('text/plain'), 10);
       const toIdx = idx;
       if (fromIdx !== toIdx) {
