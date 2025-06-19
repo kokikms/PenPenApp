@@ -1250,12 +1250,24 @@ function renderTodos() {
       <span class="todo-text">${todo.text}</span>
       <button class="todo-delete-btn" title="削除">×</button>
     `;
-    // 編集機能：テキスト部分クリックで編集モーダル
     const textSpan = todoItem.querySelector('.todo-text');
-    textSpan.addEventListener('click', (e) => {
-      e.stopPropagation();
-      showEditTodoModal(todo);
-    });
+    // --- 編集機能：PCはクリック、スマホはダブルタップで編集モーダル ---
+    if (isTouchDevice()) {
+      let lastTap = 0;
+      textSpan.addEventListener('touchend', (e) => {
+        const now = Date.now();
+        if (now - lastTap < 400) {
+          e.stopPropagation();
+          showEditTodoModal(todo);
+        }
+        lastTap = now;
+      });
+    } else {
+      textSpan.addEventListener('click', (e) => {
+        e.stopPropagation();
+        showEditTodoModal(todo);
+      });
+    }
     const checkbox = todoItem.querySelector('.todo-check');
     const deleteBtn = todoItem.querySelector('.todo-delete-btn');
     deleteBtn.addEventListener('click', async (e) => {
@@ -1336,4 +1348,8 @@ function renderTodos() {
     });
     todoList.appendChild(todoItem);
   });
+}
+
+function isTouchDevice() {
+  return 'ontouchstart' in window || navigator.maxTouchPoints > 0;
 }
