@@ -58,6 +58,13 @@ const settingsModal = document.getElementById('settingsModal');
 const logoutModalBtn = document.getElementById('logoutModalBtn');
 const closeSettingsModalBtn = document.getElementById('closeSettingsModalBtn');
 
+// 編集用モーダル要素の取得
+const editTodoModal = document.getElementById('editTodoModal');
+const editTodoInput = document.getElementById('editTodoInput');
+const saveEditTodoBtn = document.getElementById('saveEditTodoBtn');
+const cancelEditTodoBtn = document.getElementById('cancelEditTodoBtn');
+let editingTodo = null;
+
 // Supabaseクライアントを初期化
 function initSupabase() {
   try {
@@ -814,19 +821,14 @@ function hideTodoModal() {
 // タスクの保存
 async function saveTodo() {
   if (!supabaseClient || !userData.id) return;
-  
   const text = todoInput?.value.trim();
-  
   if (!text) {
     alert('タスク名を入力してください');
     return;
   }
-  
   try {
     const hasNotification = notificationToggle?.checked || false;
     const notificationTimeValue = hasNotification ? notificationTime?.value : null;
-    
-    // Supabaseにタスクを保存
     const { data, error } = await supabaseClient
       .from('todos')
       .insert([{
@@ -839,202 +841,16 @@ async function saveTodo() {
         created_at: new Date().toISOString()
       }])
       .select();
-    
     if (error) throw error;
-    
     if (data) {
-      // ローカルのtodosリストに追加
       userData.todos.unshift(data[0]);
-      
-      // 通知の設定（Web Push通知がサポートされている場合）
-      if (hasNotification && notificationTimeValue && Notification.permission === 'granted') {
-        scheduleNotification(text, notificationTimeValue);
-      }
-      
       renderTodos();
       updatePenguinState();
       hideTodoModal();
     }
-    
   } catch (error) {
     console.error('タスク保存エラー:', error);
     alert('タスクの保存に失敗しました。もう一度お試しください。');
-  }
-}
-
-// 通知のスケジュール
-function scheduleNotification(taskText, timeString) {
-  const [hours, minutes] = timeString.split(':');
-  const now = new Date();
-  const notificationTime = new Date();
-  
-  notificationTime.setHours(parseInt(hours, 10));
-  notificationTime.setMinutes(parseInt(minutes, 10));
-  notificationTime.setSeconds(0);
-  
-  // 設定時間が過ぎている場合は翌日に設定
-  if (notificationTime < now) {
-    notificationTime.setDate(notificationTime.getDate() + 1);
-  }
-  
-  const timeUntilNotification = notificationTime.getTime() - now.getTime();
-  
-  setTimeout(() => {
-    if (Notification.permission === 'granted') {
-      new Notification('ペンペンからのお知らせ', {
-        body: `${taskText}の時間だよ〜！いっしょにがんばろっ！`,
-        icon: CONFIG?.app?.notification?.icon || 'images/Whisk_happy_home.jpg'
-      });
-    }
-  }, timeUntilNotification);
-}
-
-// タスクの表示更新
-function renderTodos() {
-  if (!todoList) return;
-  
-  todoList.innerHTML = '';
-  
-  // 今日のタスクのみフィルター
-  const todayTodos = getTodayTodos();
-  
-  if (todayTodos.length === 0) {
-    todoList.innerHTML = '<div class="todo-item">今日のタスクはまだないよ〜</div>';
-    return;
-  }
-  
-  todayTodos.forEach(todo => {
-    const todoItem = document.createElement('div');
-    todoItem.className = `todo-item ${todo.completed ? 'completed' : ''}`;
-    
-    todoItem.innerHTML = `
-      <input type="checkbox" class="todo-check" ${todo.completed ? 'checked' : ''}>
-      <span class="todo-text">${todo.text}</span>
-      <button class="todo-delete-btn" title="削除">×</button>
-    `;
-    
-    const checkbox = todoItem.querySelector('.todo-check');
-    const deleteBtn = todoItem.querySelector('.todo-delete-btn');
-    
-    // 削除ボタンのイベントリスナー
-    deleteBtn.addEventListener('click', async (e) => {
-      e.stopPropagation();
-      await deleteTodo(todo, todoItem);
-    });
-    
-    checkbox.addEventListener('change', async () => {
-      todo.completed = checkbox.checked;
-      todoItem.classList.toggle('completed', todo.completed);
-      
-      try {
-        // Supabaseでタスク更新
-        const { error } = await supabaseClient
-          .from('todos')
-          .update({ 
-            completed: todo.completed,
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', todo.id);
-        
-        if (error) throw error;
-        
-        // タスク完了時にコインを付与
-        if (todo.completed && !todo.coin_given) {
-          const coinAmount = CONFIG?.app?.coins?.taskComplete || 20;
-          userData.coins += coinAmount;
-          
-          // コイン付与フラグを更新
-          await supabaseClient
-            .from('todos')
-            .update({ 
-              coin_given: true
-            })
-            .eq('id', todo.id);
-          
-          todo.coin_given = true;
-          
-          // ユーザーデータを保存
-          await saveUserData();
-          updateCoinsDisplay();
-          
-          // ペンギンのアニメーション
-          if (penguinImage) {
-            penguinImage.classList.add('bounce');
-            setTimeout(() => {
-              penguinImage.classList.remove('bounce');
-            }, 1000);
-          }
-        }
-        
-        updatePenguinState();
-        
-      } catch (error) {
-        console.error('タスク更新エラー:', error);
-        // エラー時は元に戻す
-        todo.completed = !todo.completed;
-        checkbox.checked = todo.completed;
-        todoItem.classList.toggle('completed', todo.completed);
-      }
-    });
-    
-    todoList.appendChild(todoItem);
-  });
-}
-
-// タスク削除機能
-async function deleteTodo(todo, todoItem) {
-  try {
-    // 削除中のスタイルを適用
-    todoItem.classList.add('deleting');
-    
-    // スライドアウトアニメーション開始
-    todoItem.classList.add('slide-out');
-    
-    // アニメーション完了を待つ
-    await new Promise(resolve => setTimeout(resolve, 300));
-    
-    // Supabaseからタスクを削除
-    const { error } = await supabaseClient
-      .from('todos')
-      .delete()
-      .eq('id', todo.id);
-    
-    if (error) throw error;
-    
-    // ローカルのtodosリストからも削除
-    userData.todos = userData.todos.filter(t => t.id !== todo.id);
-    
-    // DOM要素を削除
-    todoItem.remove();
-    
-    // タスクリストが空になった場合の表示更新
-    const todayTodos = getTodayTodos();
-    if (todayTodos.length === 0) {
-      renderTodos();
-    }
-    
-    // ペンギンの状態を更新
-    updatePenguinState();
-    
-    // 削除完了メッセージ
-    const message = document.createElement('div');
-    message.className = 'delete-message';
-    message.textContent = 'タスクを削除しました';
-    document.body.appendChild(message);
-    
-    // メッセージを3秒後に消す
-    setTimeout(() => {
-      message.remove();
-    }, 3000);
-    
-  } catch (error) {
-    console.error('タスク削除エラー:', error);
-    
-    // エラー時はアニメーションを元に戻す
-    todoItem.classList.remove('slide-out', 'deleting');
-    
-    // エラーメッセージを表示
-    alert('タスクの削除に失敗しました。もう一度お試しください。');
   }
 }
 
@@ -1323,6 +1139,22 @@ document.addEventListener('DOMContentLoaded', () => {
       settingsModal.classList.remove('active');
     });
   }
+
+  // --- 編集モーダルの保存・キャンセルボタンのイベント登録 ---
+  if (saveEditTodoBtn) saveEditTodoBtn.addEventListener('click', saveEditTodo);
+  if (cancelEditTodoBtn) cancelEditTodoBtn.addEventListener('click', hideEditTodoModal);
+
+  // --- 編集モーダル外クリックで閉じる ---
+  if (editTodoModal) {
+    editTodoModal.addEventListener('mousedown', (e) => {
+      if (e.target === editTodoModal) {
+        hideEditTodoModal();
+      }
+    });
+  }
+
+  // 柔らかい進捗確認通知
+  setTimeout(checkTaskProgress, 2000);
 });
 
 // ウィンドウ読み込み完了時のフォールバック
@@ -1342,3 +1174,166 @@ window.addEventListener('load', () => {
     }
   }
 });
+
+// 編集用モーダルの表示
+function showEditTodoModal(todo) {
+  if (editTodoModal && editTodoInput) {
+    editTodoInput.value = todo.text;
+    editTodoModal.classList.add('active');
+    editingTodo = todo;
+    setTimeout(() => editTodoInput.focus(), 100);
+  }
+}
+
+// 編集用モーダルの非表示
+function hideEditTodoModal() {
+  if (editTodoModal) {
+    editTodoModal.classList.remove('active');
+    editingTodo = null;
+  }
+}
+
+// 編集保存処理
+async function saveEditTodo() {
+  if (!supabaseClient || !userData.id || !editingTodo) return;
+  const newText = editTodoInput?.value.trim();
+  if (!newText) {
+    alert('タスク名を入力してください');
+    return;
+  }
+  try {
+    const { data, error } = await supabaseClient
+      .from('todos')
+      .update({ text: newText, updated_at: new Date().toISOString() })
+      .eq('id', editingTodo.id)
+      .select();
+    if (error) throw error;
+    if (data && data[0]) {
+      // ローカルデータも更新
+      const idx = userData.todos.findIndex(t => t.id === editingTodo.id);
+      if (idx >= 0) userData.todos[idx].text = newText;
+      renderTodos();
+      updatePenguinState();
+      hideEditTodoModal();
+    }
+  } catch (error) {
+    console.error('タスク編集エラー:', error);
+    alert('タスクの編集に失敗しました。もう一度お試しください。');
+  }
+}
+
+// --- 進捗確認通知 ---
+function checkTaskProgress() {
+  const todayTodos = getTodayTodos();
+  if (todayTodos.length > 0 && todayTodos.every(t => !t.completed)) {
+    showSoftNotification('タスクの進み具合はどう？無理せずいこうね〜', 'warning');
+  }
+}
+
+// renderTodosの中身を編集：タスク項目に編集・ドラッグ＆ドロップ機能を追加
+function renderTodos() {
+  if (!todoList) return;
+  todoList.innerHTML = '';
+  const todayTodos = getTodayTodos();
+  if (todayTodos.length === 0) {
+    todoList.innerHTML = '<div class="todo-item">今日のタスクはまだないよ〜</div>';
+    return;
+  }
+  todayTodos.forEach((todo, idx) => {
+    const todoItem = document.createElement('div');
+    todoItem.className = `todo-item ${todo.completed ? 'completed' : ''}`;
+    todoItem.setAttribute('draggable', 'true');
+    todoItem.dataset.todoId = todo.id;
+    todoItem.dataset.idx = idx;
+    todoItem.innerHTML = `
+      <input type="checkbox" class="todo-check" ${todo.completed ? 'checked' : ''}>
+      <span class="todo-text">${todo.text}</span>
+      <button class="todo-delete-btn" title="削除">×</button>
+    `;
+    // 編集機能：テキスト部分クリックで編集モーダル
+    const textSpan = todoItem.querySelector('.todo-text');
+    textSpan.addEventListener('click', (e) => {
+      e.stopPropagation();
+      showEditTodoModal(todo);
+    });
+    const checkbox = todoItem.querySelector('.todo-check');
+    const deleteBtn = todoItem.querySelector('.todo-delete-btn');
+    deleteBtn.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      await deleteTodo(todo, todoItem);
+    });
+    checkbox.addEventListener('change', async () => {
+      todo.completed = checkbox.checked;
+      todoItem.classList.toggle('completed', todo.completed);
+      try {
+        const { error } = await supabaseClient
+          .from('todos')
+          .update({ 
+            completed: todo.completed,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', todo.id);
+        if (error) throw error;
+        if (todo.completed && !todo.coin_given) {
+          const coinAmount = CONFIG?.app?.coins?.taskComplete || 20;
+          userData.coins += coinAmount;
+          await supabaseClient
+            .from('todos')
+            .update({ coin_given: true })
+            .eq('id', todo.id);
+          todo.coin_given = true;
+          await saveUserData();
+          updateCoinsDisplay();
+          if (penguinImage) {
+            penguinImage.classList.add('bounce');
+            setTimeout(() => {
+              penguinImage.classList.remove('bounce');
+            }, 1000);
+          }
+        }
+        updatePenguinState();
+      } catch (error) {
+        console.error('タスク更新エラー:', error);
+        todo.completed = !todo.completed;
+        checkbox.checked = todo.completed;
+        todoItem.classList.toggle('completed', todo.completed);
+      }
+    });
+    // ドラッグ＆ドロップイベント
+    todoItem.addEventListener('dragstart', (e) => {
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/plain', idx);
+      todoItem.classList.add('dragging');
+    });
+    todoItem.addEventListener('dragend', () => {
+      todoItem.classList.remove('dragging');
+    });
+    todoItem.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      todoItem.classList.add('drag-over');
+    });
+    todoItem.addEventListener('dragleave', () => {
+      todoItem.classList.remove('drag-over');
+    });
+    todoItem.addEventListener('drop', async (e) => {
+      e.preventDefault();
+      todoItem.classList.remove('drag-over');
+      const fromIdx = parseInt(e.dataTransfer.getData('text/plain'), 10);
+      const toIdx = idx;
+      if (fromIdx !== toIdx) {
+        // 並べ替え
+        const moved = todayTodos.splice(fromIdx, 1)[0];
+        todayTodos.splice(toIdx, 0, moved);
+        // userData.todosの順序も更新
+        const todayIds = todayTodos.map(t => t.id);
+        userData.todos = userData.todos.filter(t => !todayIds.includes(t.id)).concat(todayTodos);
+        renderTodos();
+        // 並び順をSupabaseに保存（orderカラムがある場合）
+        for (let i = 0; i < todayTodos.length; i++) {
+          await supabaseClient.from('todos').update({ order: i }).eq('id', todayTodos[i].id);
+        }
+      }
+    });
+    todoList.appendChild(todoItem);
+  });
+}
