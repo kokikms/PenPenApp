@@ -1333,11 +1333,23 @@ function renderTodos() {
       e.dataTransfer.effectAllowed = 'move';
       e.dataTransfer.setData('text/plain', idx);
       todoItem.classList.add('dragging');
-      e.dataTransfer.setDragImage(todoItem, todoItem.offsetWidth / 2, todoItem.offsetHeight / 2);
-    });
-    todoItem.addEventListener('dragend', () => {
-      todoItem.classList.remove('dragging');
-      removeDropIndicator();
+      // クローンを作成して縮小
+      const dragClone = todoItem.cloneNode(true);
+      const rect = todoItem.getBoundingClientRect();
+      dragClone.style.width = rect.width + 'px';
+      dragClone.style.height = rect.height + 'px';
+      dragClone.style.transform = 'scale(0.66)';
+      dragClone.style.transformOrigin = 'left top';
+      dragClone.style.position = 'absolute';
+      dragClone.style.top = '-9999px';
+      dragClone.style.left = '-9999px';
+      dragClone.style.pointerEvents = 'none';
+      document.body.appendChild(dragClone);
+      // drag imageの基準点も0,高さの1/3に
+      e.dataTransfer.setDragImage(dragClone, 0, rect.height * 0.33);
+      todoItem.addEventListener('dragend', () => {
+        if (dragClone && dragClone.parentNode) dragClone.parentNode.removeChild(dragClone);
+      }, { once: true });
     });
     todoItem.addEventListener('dragover', (e) => {
       e.preventDefault();
