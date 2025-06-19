@@ -819,3 +819,18 @@ input:checked + .toggle-slider:before {
   height: 1.2em;
   display: block;
 }
+
+.drop-indicator {
+  height: 4px;
+  background: #6aa4d9;
+  border-radius: 2px;
+  margin: 0.2em 0.5em;
+  transition: background 0.2s;
+}
+
+.todo-item.dragging {
+  opacity: 0.7;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+  transform: scale(1.05);
+  z-index: 10;
+}

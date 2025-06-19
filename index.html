@@ -163,6 +163,18 @@
     </div>
   </div>
 
+  <!-- タスク編集モーダル -->
+  <div id="editTodoModal" class="modal">
+    <div class="modal-content">
+      <h3 class="modal-title">タスクを編集</h3>
+      <input type="text" id="editTodoInput" class="modal-input" required>
+      <div class="modal-buttons">
+        <button id="cancelEditTodoBtn" class="modal-btn cancel">キャンセル</button>
+        <button id="saveEditTodoBtn" class="modal-btn save">保存する</button>
+      </div>
+    </div>
+  </div>
+
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="js/config.js"></script>
   <script src="js/app.js"></script>
