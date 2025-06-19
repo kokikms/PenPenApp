@@ -124,7 +124,7 @@ const ShopManager = {
         itemElement.className = 'shop-item';
         
         itemElement.innerHTML = `
-          <img src="${item.image_url || 'images/55b5453a51a444569199c2ab5b5d4e4a.png'}" 
+          <img src="${item.image_url || 'images/Whisk_normal_1.jpg'}" 
                alt="${item.name}" class="shop-item-img">
           <div class="shop-item-name">${item.name}</div>
           <div class="shop-item-price">${item.price}コイン</div>
@@ -306,10 +306,10 @@ const ShopManager = {
       
       // 装備中アイテムがある場合、ペンギンの見た目を変更
       if (priorityItem && priorityItem.items) {
-        this.elements.islandPenguin.src = priorityItem.items.image_url || 'images/55b5453a51a444569199c2ab5b5d4e4a.png';
+        this.elements.islandPenguin.src = priorityItem.items.image_url || 'images/Whisk_normal_1.jpg';
       } else {
         // デフォルトの姿に戻す
-        this.elements.islandPenguin.src = 'images/55b5453a51a444569199c2ab5b5d4e4a.png';
+        this.elements.islandPenguin.src = 'images/Whisk_normal_1.jpg';
       }
     },
     
@@ -359,7 +359,7 @@ const ShopManager = {
       const penguin = document.createElement('img');
       penguin.id = 'islandPenguin';
       penguin.className = 'island-penguin walking';
-      penguin.src = 'images/55b5453a51a444569199c2ab5b5d4e4a.png';
+      penguin.src = 'images/Whisk_normal_1.jpg';
       penguin.alt = 'ペンペン';
       islandScene.appendChild(penguin);
       
@@ -528,23 +528,23 @@ const ShopManager = {
         display: flex;
         justify-content: space-around;
         background-color: var(--card-bg);
-        border-radius: 20px;
-        padding: 0.2rem 0.3rem;
-        margin-bottom: 1rem;
+        border-radius: 15px;
+        padding: 0.1rem 0.2rem;
+        margin-bottom: 0.8rem;
         box-shadow: var(--box-shadow);
       }
       
       .tab-item {
         flex: 1;
         text-align: center;
-        padding: 0.4rem 0.2rem;
-        border-radius: 15px;
+        padding: 0.3rem 0.1rem;
+        border-radius: 12px;
         cursor: pointer;
         transition: background-color 0.3s;
         display: flex;
         flex-direction: column;
         align-items: center;
-        font-size: 0.95rem;
+        font-size: 0.9rem;
       }
       
       .tab-item.active {
@@ -552,12 +552,12 @@ const ShopManager = {
       }
       
       .tab-icon {
-        font-size: 1rem;
-        margin-bottom: 0.1rem;
+        font-size: 0.9rem;
+        margin-bottom: 0.05rem;
       }
       
       .tab-label {
-        font-size: 0.7rem;
+        font-size: 0.65rem;
       }
       
       /* タブコンテンツのスタイル */

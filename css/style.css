@@ -279,6 +279,33 @@ header h1 {
   font-size: 1.2rem;
   margin-bottom: 0.8rem;
   color: var(--text-color);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5em;
+}
+
+.todo-title .todo-add-btn {
+  width: 1.6em;
+  height: 1.6em;
+  min-width: unset;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2em;
+  box-shadow: none;
+  margin: 0;
+  background: #fff;
+  border: 1.5px solid var(--light-gray);
+  color: var(--primary-color);
+  border-radius: 50%;
+  transition: background 0.2s, color 0.2s, border 0.2s;
+}
+.todo-title .todo-add-btn:hover {
+  background: #f0f0f0;
+  color: #388be0;
+  border-color: var(--primary-color);
 }
 
 .todo-list {
@@ -358,6 +385,7 @@ header h1 {
   opacity: 0.5;
   transform: scale(1);
   position: relative;
+  pointer-events: auto;
 }
 
 .todo-delete-btn::before {
@@ -379,6 +407,10 @@ header h1 {
   opacity: 1;
   color: #ff3742;
   transform: scale(1.1);
+}
+
+.todo-delete-btn svg, .todo-delete-btn svg * {
+  pointer-events: none;
 }
 
 .todo-item.slide-out {
@@ -838,4 +870,37 @@ input:checked + .toggle-slider:before {
   box-shadow: 0 4px 16px rgba(0,0,0,0.2);
   transform: scale(1.05);
   z-index: 10;
+}
+
+.tab-nav {
+  display: flex;
+  gap: 1em;
+  justify-content: center;
+  margin-bottom: 0.5em;
+}
+.tab-btn {
+  background: #fff;
+  color: var(--primary-color);
+  border: 1.5px solid var(--light-gray);
+  border-radius: 16px 16px 0 0;
+  padding: 0.5em 1.5em;
+  font-size: 1em;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+  transition: background 0.2s, color 0.2s, border 0.2s;
+  outline: none;
+}
+.tab-btn:hover {
+  background: #f0f8ff;
+  color: #388be0;
+  border-color: var(--primary-color);
+}
+.tab-btn.active {
+  background: var(--primary-color);
+  color: #fff;
+  border-color: var(--primary-color);
+  z-index: 1;
+}
+#tabContentArea {
+  width: 100%;
 }

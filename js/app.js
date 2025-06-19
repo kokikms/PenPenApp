@@ -22,6 +22,9 @@ let userData = {
   islandLevel: 1
 };
 
+// 今日完了したが削除されたタスクを記録する
+let completedTodayDeleted = [];
+
 // DOM要素の取得
 const loginScreen = document.getElementById('loginScreen');
 const appScreen = document.getElementById('appScreen');
@@ -51,7 +54,7 @@ const loginBtn = document.getElementById('loginBtn');
 const signupBtn = document.getElementById('signupBtn');
 
 // 気分ボタン・ToDoリストの親要素取得
-const moodContainer = document.getElementById('moodContainer'); // 必要に応じてHTML側も確認
+const moodContainer = document.querySelector('.mood-selector');
 
 // 設定モーダル関連の要素取得
 const settingsModal = document.getElementById('settingsModal');
@@ -66,6 +69,8 @@ const cancelEditTodoBtn = document.getElementById('cancelEditTodoBtn');
 let editingTodo = null;
 
 let ignoreNextEditClick = false;
+
+console.log('app.js loaded');
 
 // Supabaseクライアントを初期化
 function initSupabase() {
@@ -320,6 +325,7 @@ function showAppScreen() {
   updateCoinsDisplay();
   updateIslandLevel();
   checkLastVisit();
+  setupTabSwitching();
 }
 
 // ユーザーデータの読み込み
@@ -544,6 +550,7 @@ function removeEventListeners() {
 
 // イベントリスナーの設定
 function setupEventListeners() {
+  console.log('setupEventListeners called');
   // 既にセットアップ済みの場合は重複を防ぐ
   if (eventListenersSetup) {
     console.log('Event listeners already setup, removing existing ones first');
@@ -645,14 +652,20 @@ function setupEventListeners() {
   
   // 気分ボタンのイベントリスナー（委譲方式）
   eventHandlers.moodContainerClick = async (e) => {
-    if (e.target.classList.contains('mood-btn')) {
-      const mood = e.target.getAttribute('data-mood');
+    // クリックされた要素がmood-btnでない場合、親要素を探す
+    let btn = e.target;
+    while (btn && !btn.classList.contains('mood-btn')) {
+      btn = btn.parentElement;
+    }
+    if (btn && btn.classList.contains('mood-btn')) {
+      const mood = btn.getAttribute('data-mood');
       document.querySelectorAll('.mood-btn').forEach(b => b.classList.remove('selected'));
-      e.target.classList.add('selected');
+      btn.classList.add('selected');
       await saveMood(mood);
     }
   };
   if (moodContainer) {
+    console.log('moodContainer:', moodContainer);
     moodContainer.addEventListener('click', eventHandlers.moodContainerClick);
   }
   
@@ -859,10 +872,11 @@ async function saveTodo() {
 // 気分の保存
 async function saveMood(moodValue) {
   if (!supabaseClient || !userData.id) return;
-  
   try {
     const today = new Date().toISOString().split('T')[0];
-    
+    // --- デバッグ: 保存前の状態 ---
+    console.log('[DEBUG] saveMood前 userData.moods:', userData.moods);
+    console.log('[DEBUG] saveMood前 getTodayMood:', getTodayMood());
     // 今日の気分が既に記録されているか確認
     const { data: existingMoods, error: checkError } = await supabaseClient
       .from('moods')
@@ -870,11 +884,8 @@ async function saveMood(moodValue) {
       .eq('user_id', userData.id)
       .gte('created_at', `${today}T00:00:00`)
       .lte('created_at', `${today}T23:59:59`);
-    
     if (checkError) throw checkError;
-    
     let result;
-    
     if (existingMoods && existingMoods.length > 0) {
       // 既存の気分を更新
       const { data, error } = await supabaseClient
@@ -885,10 +896,8 @@ async function saveMood(moodValue) {
         })
         .eq('id', existingMoods[0].id)
         .select();
-      
       if (error) throw error;
       result = data;
-      
     } else {
       // 新しい気分を記録
       const { data, error } = await supabaseClient
@@ -899,31 +908,25 @@ async function saveMood(moodValue) {
           created_at: new Date().toISOString()
         }])
         .select();
-      
       if (error) throw error;
       result = data;
-      
       // 初めて記録したときにコインを付与
       const coinAmount = CONFIG?.app?.coins?.moodRecord || 10;
       userData.coins += coinAmount;
       await saveUserData();
       updateCoinsDisplay();
     }
-    
     if (result) {
       // 気分データを更新
       const existingIndex = userData.moods.findIndex(mood => 
         mood.created_at && mood.created_at.split('T')[0] === today
       );
-      
       if (existingIndex >= 0) {
         userData.moods[existingIndex] = result[0];
       } else {
         userData.moods.unshift(result[0]);
       }
-      
       updatePenguinState();
-      
       // ペンギンのアニメーション
       if (penguinImage) {
         penguinImage.classList.add('bounce');
@@ -932,7 +935,11 @@ async function saveMood(moodValue) {
         }, 1000);
       }
     }
-    
+    // --- デバッグ: 保存後の状態 ---
+    setTimeout(() => {
+      console.log('[DEBUG] saveMood後 userData.moods:', userData.moods);
+      console.log('[DEBUG] saveMood後 getTodayMood:', getTodayMood());
+    }, 1000);
   } catch (error) {
     console.error('気分保存エラー:', error);
     alert('気分の記録に失敗しました。もう一度お試しください。');
@@ -942,9 +949,16 @@ async function saveMood(moodValue) {
 // 今日のタスクを取得
 function getTodayTodos() {
   const today = new Date().toISOString().split('T')[0];
-  return userData.todos.filter(todo => 
-    todo.created_at && todo.created_at.split('T')[0] === today
-  );
+  return userData.todos.filter(todo => {
+    if (!todo.completed) {
+      // 未完了タスクは日付に関係なく全て表示
+      return true;
+    } else {
+      // 完了タスクは「今日完了（updated_atが今日）」のものは作成日を問わず表示
+      const updated = todo.updated_at && todo.updated_at.split('T')[0];
+      return updated === today;
+    }
+  });
 }
 
 // 今日の気分を取得
@@ -958,48 +972,73 @@ function getTodayMood() {
 // ペンギンの状態を更新
 function updatePenguinState() {
   if (!penguinImage || !penguinSpeech) return;
-  
-  // 今日のToDoの完了状況を確認
+  const today = new Date().toISOString().split('T')[0];
   const todayTodos = getTodayTodos();
-  const completedTodos = todayTodos.filter(todo => todo.completed);
-  
-  // 最後の気分を取得
+  // 完了タスク数は「今日完了（updated_atが今日）」のもの＋削除記録
+  const completedToday = userData.todos.filter(todo => todo.completed && todo.updated_at && todo.updated_at.split('T')[0] === today);
+  // 重複削除（同じIDがuserData.todosに残っていれば除外）
+  const deletedCount = completedTodayDeleted.filter(d => !userData.todos.some(t => t.id === d.id)).length;
+  const completedCount = completedToday.length + deletedCount;
   const lastMood = getTodayMood();
-  
   let penguinState = 'normal';
   let message = '';
-  
-  // ペンギンの状態と発言を決定
-  if (todayTodos.length === 0) {
-    penguinState = 'normal';
-    message = 'おはよう〜！今日はどんな一日にしようかな〜？';
-  } else if (completedTodos.length === todayTodos.length && todayTodos.length > 0) {
-    penguinState = 'happy';
-    message = 'わ〜い！全部できたんだね、すごいよ〜！';
-  } else if (completedTodos.length > 0) {
-    penguinState = 'normal';
-    message = `${completedTodos.length}個のタスクができたね！残りもゆっくり一緒にがんばろ〜！`;
-  } else {
-    if (lastMood && lastMood.mood === 'sad') {
+  // --- 気分優先で画像を決定 ---
+  if (lastMood) {
+    if (lastMood.mood === 'happy') {
+      penguinState = 'happy';
+    } else if (lastMood.mood === 'sad') {
       penguinState = 'sad';
-      message = 'ちょっと大変な日かも？ゆっくり休んでもいいんだよ〜';
+    } else if (lastMood.mood === 'tired') {
+      penguinState = 'normal'; // tired用画像がなければnormal
     } else {
       penguinState = 'normal';
+    }
+  } else {
+    penguinState = 'normal';
+  }
+  // --- メッセージはタスク状況も反映 ---
+  if (todayTodos.length === 0) {
+    if (penguinState === 'happy') {
+      message = '今日はうれしい気分！どんな一日にしようか〜？';
+    } else if (penguinState === 'sad') {
+      message = '今日はちょっと悲しい気分かも。無理せずゆっくり過ごそうね。';
+    } else if (lastMood && lastMood.mood === 'tired') {
+      message = 'つかれてるんだね〜、ムリしないでね。今日はゆっくりしよう！';
+    } else {
+      message = 'おはよう〜！今日はどんな一日にしようかな〜？';
+    }
+  } else if (completedCount === todayTodos.length && todayTodos.length > 0) {
+    if (penguinState === 'happy') {
+      message = 'うれしい気分で全部できたね！すごいよ〜！';
+    } else if (penguinState === 'sad') {
+      message = '全部できたけど、今日はちょっと悲しい気分かな。よくがんばったね。';
+    } else if (lastMood && lastMood.mood === 'tired') {
+      message = 'つかれてる中、全部できたね！本当におつかれさま！';
+    } else {
+      message = 'わ〜い！全部できたんだね、すごいよ〜！';
+    }
+  } else if (completedCount > 0) {
+    if (penguinState === 'happy') {
+      message = `${completedCount}個のタスクができたよ！うれしい気分で残りもがんばろう〜！`;
+    } else if (penguinState === 'sad') {
+      message = `${completedCount}個できたけど、今日はちょっと悲しい気分。無理せずいこうね。`;
+    } else if (lastMood && lastMood.mood === 'tired') {
+      message = `${completedCount}個できたね！つかれてる時は休み休みでOK！`;
+    } else {
+      message = `${completedCount}個のタスクができたね！残りもゆっくり一緒にがんばろ〜！`;
+    }
+  } else {
+    if (penguinState === 'happy') {
+      message = 'うれしい気分でスタート！一緒にがんばろう〜！';
+    } else if (penguinState === 'sad') {
+      message = '今日はちょっと悲しい気分。無理せずゆっくりやろうね。';
+    } else if (lastMood && lastMood.mood === 'tired') {
+      message = 'つかれてるんだね〜、ムリしないでね。ちょっと休もうよ〜';
+    } else {
       message = 'まだタスクが残ってるけど、ゆっくりいこうね〜！';
     }
   }
-  
-  // 気分に応じたメッセージの追加
-  if (lastMood) {
-    if (lastMood.mood === 'happy' && penguinState !== 'happy') {
-      message = 'うれしい気分なんだね！その調子でいこう〜！';
-      penguinState = 'happy';
-    } else if (lastMood.mood === 'tired' && penguinState === 'normal') {
-      message = 'つかれてるんだね〜、ムリしないでね。ちょっと休もうよ〜';
-    }
-  }
-  
-  // ペンギンの画像を設定
+  // --- 画像切り替え ---
   if (penguinState === 'happy') {
     penguinImage.src = 'images/Whisk_happy_home.jpg';
   } else if (penguinState === 'sad') {
@@ -1007,8 +1046,9 @@ function updatePenguinState() {
   } else {
     penguinImage.src = 'images/Whisk_normal_1.jpg';
   }
-  
   penguinSpeech.textContent = message;
+  // --- デバッグログ ---
+  console.log('[DEBUG] 気分優先 updatePenguinState:', {penguinState, message, todayTodos, completedCount, lastMood});
 }
 
 // コイン表示の更新
@@ -1099,12 +1139,35 @@ function requestNotificationPermission() {
   }
 }
 
+// タブ切り替え機能
+function setupTabSwitching() {
+  const tabTask = document.getElementById('tabTask');
+  const tabMood = document.getElementById('tabMood');
+  const todoSection = document.querySelector('.todo-section');
+  const moodSection = document.querySelector('.mood-section');
+  if (!tabTask || !tabMood || !todoSection || !moodSection) return;
+
+  tabTask.addEventListener('click', () => {
+    tabTask.classList.add('active');
+    tabMood.classList.remove('active');
+    todoSection.style.display = '';
+    moodSection.style.display = 'none';
+  });
+  tabMood.addEventListener('click', () => {
+    tabMood.classList.add('active');
+    tabTask.classList.remove('active');
+    todoSection.style.display = 'none';
+    moodSection.style.display = '';
+  });
+}
+
 // ページ読み込み時に初期化
 document.addEventListener('DOMContentLoaded', () => {
   console.log('DOM Content Loaded - Starting app initialization');
   try {
     initApp();
     requestNotificationPermission();
+    setupTabSwitching();
   } catch (error) {
     console.error('Error during DOMContentLoaded initialization:', error);
     // 緊急フォールバック: 直接ログイン画面を表示
@@ -1407,6 +1470,12 @@ async function deleteTodo(todo, todoItem) {
       .eq('id', todo.id)
       .eq('user_id', userData.id);
     if (error) throw error;
+
+    // 今日完了したタスクなら記録
+    const today = new Date().toISOString().split('T')[0];
+    if (todo.completed && todo.updated_at && todo.updated_at.split('T')[0] === today) {
+      completedTodayDeleted.push({ id: todo.id, updated_at: todo.updated_at });
+    }
 
     // ローカル配列から削除
     userData.todos = userData.todos.filter(t => t.id !== todo.id);

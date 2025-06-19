@@ -34,10 +34,6 @@ const emailAuthConfig = {
 
 // アプリの一般設定
 const appConfig = {
-  notification: {
-    defaultEnabled: true,
-    icon: 'images/Whisk_happy_home.jpg',
-  },
   coins: {
     taskComplete: 20,
     moodRecord: 10,

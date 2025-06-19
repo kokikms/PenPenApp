@@ -83,37 +83,40 @@
           おはよう〜今日もいっしょにいこ〜
         </div>
       </div>
-      
-      <!-- タスクリスト -->
-      <div class="todo-section">
-        <h2 class="todo-title">今日のタスク</h2>
-        <div id="todoList" class="todo-list">
-          <!-- JavaScriptでタスクが追加されます -->
-        </div>
-        <button id="addTodoBtn" class="todo-add-btn">＋ タスクを追加</button>
+      <div class="tab-nav" style="display:flex;gap:1em;justify-content:center;margin-bottom:0.5em;">
+        <button id="tabTask" class="tab-btn active">今日のタスク</button>
+        <button id="tabMood" class="tab-btn">今日の気分</button>
       </div>
-
-            
-      <!-- 気分セレクター -->
-      <div class="mood-section">
-        <h2 class="mood-title">今日の気分は？</h2>
-        <div class="mood-selector">
-          <button class="mood-btn" data-mood="happy">
-            <span class="mood-emoji">😊</span>
-            <span class="mood-label">うれしい</span>
-          </button>
-          <button class="mood-btn" data-mood="normal">
-            <span class="mood-emoji">😌</span>
-            <span class="mood-label">ふつう</span>
-          </button>
-          <button class="mood-btn" data-mood="tired">
-            <span class="mood-emoji">😓</span>
-            <span class="mood-label">つかれた</span>
-          </button>
-          <button class="mood-btn" data-mood="sad">
-            <span class="mood-emoji">😢</span>
-            <span class="mood-label">かなしい</span>
-          </button>
+      <div id="tabContentArea">
+        <div class="todo-section">
+          <h2 class="todo-title" style="display:flex;align-items:center;justify-content:space-between;gap:0.5em;">
+            <span>今日のタスク</span>
+            <button id="addTodoBtn" class="todo-add-btn">＋</button>
+          </h2>
+          <div id="todoList" class="todo-list">
+            <!-- JavaScriptでタスクが追加されます -->
+          </div>
+        </div>
+        <div class="mood-section" style="display:none;">
+          <h2 class="mood-title">今日の気分は？</h2>
+          <div class="mood-selector">
+            <button class="mood-btn" data-mood="happy">
+              <span class="mood-emoji">😊</span>
+              <span class="mood-label">うれしい</span>
+            </button>
+            <button class="mood-btn" data-mood="normal">
+              <span class="mood-emoji">😌</span>
+              <span class="mood-label">ふつう</span>
+            </button>
+            <button class="mood-btn" data-mood="tired">
+              <span class="mood-emoji">😓</span>
+              <span class="mood-label">つかれた</span>
+            </button>
+            <button class="mood-btn" data-mood="sad">
+              <span class="mood-emoji">😢</span>
+              <span class="mood-label">かなしい</span>
+            </button>
+          </div>
         </div>
       </div>
       
