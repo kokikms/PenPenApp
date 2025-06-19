@@ -1287,7 +1287,10 @@ function renderTodos() {
     });
     const checkbox = todoItem.querySelector('.todo-check');
     const deleteBtn = todoItem.querySelector('.todo-delete-btn');
-    deleteBtn.addEventListener('click', async (e) => {
+    // 念のため既存リスナーをクリア
+    deleteBtn.replaceWith(deleteBtn.cloneNode(true));
+    const newDeleteBtn = todoItem.querySelector('.todo-delete-btn');
+    newDeleteBtn.addEventListener('click', async (e) => {
       e.stopPropagation();
       await deleteTodo(todo, todoItem);
     });
@@ -1390,4 +1393,29 @@ function renderTodos() {
 
 function isTouchDevice() {
   return 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+}
+
+// タスク削除処理
+async function deleteTodo(todo, todoItem) {
+  if (!supabaseClient || !userData.id) return;
+  console.log('削除対象タスク', todo);
+  try {
+    // Supabaseから削除（user_id条件も追加）
+    const { error } = await supabaseClient
+      .from('todos')
+      .delete()
+      .eq('id', todo.id)
+      .eq('user_id', userData.id);
+    if (error) throw error;
+
+    // ローカル配列から削除
+    userData.todos = userData.todos.filter(t => t.id !== todo.id);
+
+    // UI更新
+    renderTodos();
+    updatePenguinState();
+  } catch (error) {
+    console.error('タスク削除エラー:', error);
+    alert('タスクの削除に失敗しました: ' + (error.message || error));
+  }
 }
