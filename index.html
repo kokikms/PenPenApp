@@ -56,7 +56,10 @@
     <!-- メインアプリ画面 (ログイン後に表示) -->
     <div id="appScreen" style="display: none;">
       <header style="display:flex;align-items:center;justify-content:space-between;position:relative;">
-        <h1 style="margin:0;">ペンペンと一緒に</h1>
+        <button id="islandNavBtn" class="nav-btn" title="島を見る">
+          <span class="tab-icon">🏝️</span>
+        </button>
+        <h1 style="margin:0;flex:1;text-align:center;">ペンペンと一緒に</h1>
         <button id="settingsBtn" class="settings-btn" style="position:static;top:auto;right:auto;">
           <span class="material-symbols-rounded">settings</span>
         </button>
@@ -83,7 +86,7 @@
           おはよう〜今日もいっしょにいこ〜
         </div>
       </div>
-      <div class="tab-nav" style="display:flex;gap:1em;justify-content:center;margin-bottom:0.5em;">
+      <div class="tab-nav">
         <button id="tabTask" class="tab-btn active">今日のタスク</button>
         <button id="tabMood" class="tab-btn">今日の気分</button>
       </div>

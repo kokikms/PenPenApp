@@ -434,165 +434,51 @@ const ShopManager = {
     document.head.appendChild(styleElement);
   }
   
-  // タブ切り替え機能を追加
-  function addTabsFeature() {
-    const appScreen = document.getElementById('appScreen');
-    if (!appScreen) return;
-    
-    // タブが既に存在するか確認
-    if (document.querySelector('.tabs-container')) return;
-    
-    // タブコンテナを作成
-    const tabsContainer = document.createElement('div');
-    tabsContainer.className = 'tabs-container';
-    
-    // タブを作成
-    tabsContainer.innerHTML = `
-      <div class="tab-item active" data-tab="home">
-        <span class="tab-icon">🏠</span>
-        <span class="tab-label">ホーム</span>
-      </div>
-      <div class="tab-item" data-tab="island">
-        <span class="tab-icon">🏝️</span>
-        <span class="tab-label">島</span>
-      </div>
-    `;
-    
-    // 各セクションにクラス追加
-    const homeContent = document.createElement('div');
-    homeContent.className = 'home-content tab-content active';
-    
-    // 既存の要素を移動
-    const elementsToMove = [
-      '.penguin-container',
-      '.todo-section',
-      '.mood-section',
-      '.island-status'
-    ];
-    
-    // 要素を移動
-    elementsToMove.forEach(selector => {
-      const elements = appScreen.querySelectorAll(selector);
-      elements.forEach(el => {
-        homeContent.appendChild(el);
-      });
-    });
-    
-    // 島をタブコンテンツとして設定
-    const islandContainer = document.getElementById('islandContainer');
-    if (islandContainer) {
-      islandContainer.classList.add('tab-content');
-      // デフォルトでは非表示
-      islandContainer.classList.remove('active');
-    }
-    
-    // タブとコンテンツをappScreenに追加
-    appScreen.insertBefore(tabsContainer, appScreen.firstChild);
-    appScreen.insertBefore(homeContent, islandContainer);
-    
-    // タブ切り替えイベントリスナー
-    tabsContainer.querySelectorAll('.tab-item').forEach(tab => {
-      tab.addEventListener('click', () => {
-        // アクティブタブのクラスを更新
-        tabsContainer.querySelectorAll('.tab-item').forEach(t => {
-          t.classList.remove('active');
-        });
-        tab.classList.add('active');
-        
-        // タブコンテンツの表示切替
-        const tabName = tab.getAttribute('data-tab');
-        appScreen.querySelectorAll('.tab-content').forEach(content => {
-          content.classList.remove('active');
-        });
-        
-        if (tabName === 'home') {
-          homeContent.classList.add('active');
-        } else if (tabName === 'island') {
-          islandContainer.classList.add('active');
-          // 島を表示したときにショップデータを更新
-          ShopManager.refreshShopItems();
-        } else if (tabName === 'history') {
-          const historyContainer = document.getElementById('historyContainer');
-          if (historyContainer) {
-            historyContainer.classList.add('active');
-          }
-        }
-      });
-    });
-    
-    // スタイルを追加
-    const styleElement = document.createElement('style');
-    styleElement.textContent = `
-      /* タブのスタイル */
-      .tabs-container {
-        display: flex;
-        justify-content: space-around;
-        background-color: var(--card-bg);
-        border-radius: 15px;
-        padding: 0.1rem 0.2rem;
-        margin-bottom: 0.8rem;
-        box-shadow: var(--box-shadow);
-      }
-      
-      .tab-item {
-        flex: 1;
-        text-align: center;
-        padding: 0.3rem 0.1rem;
-        border-radius: 12px;
-        cursor: pointer;
-        transition: background-color 0.3s;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        font-size: 0.9rem;
-      }
-      
-      .tab-item.active {
-        background-color: rgba(106, 164, 217, 0.2);
-      }
-      
-      .tab-icon {
-        font-size: 0.9rem;
-        margin-bottom: 0.05rem;
-      }
-      
-      .tab-label {
-        font-size: 0.65rem;
-      }
-      
-      /* タブコンテンツのスタイル */
-      .tab-content {
-        display: none;
-      }
-      
-      .tab-content.active {
-        display: block;
-      }
-      
-      /* 島コンテナの調整 */
-      .island-container {
-        margin-top: 0;
-      }
-      
-      /* ホームコンテンツ */
-      .home-content {
-        display: none;
-      }
-      
-      .home-content.active {
-        display: block;
-      }
-    `;
-    
-    document.head.appendChild(styleElement);
-  }
-  
   // ページ読み込み後に初期化
   document.addEventListener('DOMContentLoaded', () => {
-    // タブ機能を追加
     setTimeout(() => {
-      addTabsFeature();
       enhanceIslandFeature();
       ShopManager.init();
+      // 島アイコンで島画面遷移
+      const islandNavBtn = document.getElementById('islandNavBtn');
+      const islandContainer = document.getElementById('islandContainer');
+      const tabContentArea = document.getElementById('tabContentArea');
+      const penguinContainer = document.querySelector('.penguin-container');
+      const tabNav = document.querySelector('.tab-nav');
+      const islandStatus = document.querySelector('.island-status');
+      const headerTitle = document.querySelector('header h1');
+      if (headerTitle) headerTitle.style.fontSize = '1.1rem';
+      if (islandNavBtn && islandContainer) {
+        function switchToIsland() {
+          islandContainer.style.display = 'block';
+          if (tabContentArea) tabContentArea.style.display = 'none';
+          if (penguinContainer) penguinContainer.style.display = 'none';
+          if (tabNav) tabNav.style.display = 'none';
+          if (islandStatus) islandStatus.style.display = 'none';
+          // アイコンをホームに切り替え
+          islandNavBtn.id = 'homeNavBtn';
+          islandNavBtn.title = 'ホームに戻る';
+          islandNavBtn.innerHTML = '<span class="tab-icon">🏠</span>';
+          islandNavBtn.removeEventListener('click', switchToIsland);
+          islandNavBtn.addEventListener('click', switchToHome);
+        }
+        function switchToHome() {
+          islandContainer.style.display = 'none';
+          if (tabContentArea) tabContentArea.style.display = '';
+          if (penguinContainer) penguinContainer.style.display = '';
+          if (tabNav) tabNav.style.display = '';
+          if (islandStatus) islandStatus.style.display = '';
+          // アイコンを島に戻す
+          const homeBtn = document.getElementById('homeNavBtn');
+          if (homeBtn) {
+            homeBtn.id = 'islandNavBtn';
+            homeBtn.title = '島を見る';
+            homeBtn.innerHTML = '<span class="tab-icon">🏝️</span>';
+            homeBtn.removeEventListener('click', switchToHome);
+            homeBtn.addEventListener('click', switchToIsland);
+          }
+        }
+        islandNavBtn.addEventListener('click', switchToIsland);
+      }
     }, 500);
   });

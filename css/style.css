@@ -80,16 +80,49 @@ header h1 {
   text-align: center;
 }
 
-.settings-btn {
-  position: absolute;
-  top: 50%;
-  right: 1rem;
-  transform: translateY(-50%);
-  background: none;
+.nav-btn, .settings-btn {
+  background: #fff;
   border: none;
-  font-size: 1.5rem;
-  color: var(--text-color);
+  color: #6aa4d9;
+  font-size: 1.2em;
+  width: 1.5em;
+  height: 1.5em;
+  border-radius: 50%;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
   cursor: pointer;
+  margin-left: 1rem;
+  margin-right: 0.3em;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.2s, box-shadow 0.2s, background 0.2s;
+  line-height: 1;
+  vertical-align: middle;
+}
+.nav-btn:hover, .settings-btn:hover {
+  color: #388be0;
+  background: #f0f8ff;
+  box-shadow: 0 4px 16px rgba(106,164,217,0.10);
+}
+
+.settings-btn {
+  background: #fff;
+  border: none;
+  color: #6aa4d9;
+  font-size: 1.1em;
+  width: 1em;
+  height: 1em;
+  border-radius: 50%;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  cursor: pointer;
+  margin-right: 1rem;
+  margin-left: 0.3em;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.2s, box-shadow 0.2s, background 0.2s;
+  line-height: 1;
+  vertical-align: middle;
 }
 
 .island-penguin {
@@ -225,7 +258,13 @@ header h1 {
 
 /* 気分セレクター */
 .mood-section {
-  margin: 1rem 0;
+  background: #fff;
+  border-radius: 18px;
+  box-shadow: 0 2px 10px rgba(106,164,217,0.08);
+  padding: 1.1em 1em 1.2em 1em;
+  margin-bottom: 1.2em;
+  margin-top: 0;
+  transition: box-shadow 0.2s;
 }
 
 .mood-title {
@@ -272,7 +311,13 @@ header h1 {
 
 /* タスクリスト */
 .todo-section {
-  margin: 1rem 0;
+  background: #fff;
+  border-radius: 18px;
+  box-shadow: 0 2px 10px rgba(106,164,217,0.08);
+  padding: 1.1em 1em 1.2em 1em;
+  margin-bottom: 1.2em;
+  margin-top: 0;
+  transition: box-shadow 0.2s;
 }
 
 .todo-title {
@@ -876,7 +921,7 @@ input:checked + .toggle-slider:before {
   display: flex;
   gap: 1em;
   justify-content: center;
-  margin-bottom: 0.5em;
+  margin: 0;
 }
 .tab-btn {
   background: #fff;

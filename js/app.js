@@ -1007,7 +1007,7 @@ function updatePenguinState() {
     } else {
       message = 'おはよう〜！今日はどんな一日にしようかな〜？';
     }
-  } else if (completedCount === todayTodos.length && todayTodos.length > 0) {
+  } else if (todayTodos.length > 0 && todayTodos.every(t => t.completed)) {
     if (penguinState === 'happy') {
       message = 'うれしい気分で全部できたね！すごいよ〜！';
     } else if (penguinState === 'sad') {
@@ -1017,7 +1017,7 @@ function updatePenguinState() {
     } else {
       message = 'わ〜い！全部できたんだね、すごいよ〜！';
     }
-  } else if (completedCount > 0) {
+  } else {
     if (penguinState === 'happy') {
       message = `${completedCount}個のタスクができたよ！うれしい気分で残りもがんばろう〜！`;
     } else if (penguinState === 'sad') {
@@ -1026,16 +1026,6 @@ function updatePenguinState() {
       message = `${completedCount}個できたね！つかれてる時は休み休みでOK！`;
     } else {
       message = `${completedCount}個のタスクができたね！残りもゆっくり一緒にがんばろ〜！`;
-    }
-  } else {
-    if (penguinState === 'happy') {
-      message = 'うれしい気分でスタート！一緒にがんばろう〜！';
-    } else if (penguinState === 'sad') {
-      message = '今日はちょっと悲しい気分。無理せずゆっくりやろうね。';
-    } else if (lastMood && lastMood.mood === 'tired') {
-      message = 'つかれてるんだね〜、ムリしないでね。ちょっと休もうよ〜';
-    } else {
-      message = 'まだタスクが残ってるけど、ゆっくりいこうね〜！';
     }
   }
   // --- 画像切り替え ---
@@ -1378,13 +1368,7 @@ function renderTodos() {
             .eq('id', todo.id);
           todo.coin_given = true;
           await saveUserData();
-          updateCoinsDisplay();
-          if (penguinImage) {
-            penguinImage.classList.add('bounce');
-            setTimeout(() => {
-              penguinImage.classList.remove('bounce');
-            }, 1000);
-          }
+          updatePenguinState();
         }
         updatePenguinState();
       } catch (error) {
